@@ -157,7 +157,7 @@ class coilCalculator:
         femm.mi_refreshview()
         femm.mi_analyze()
         femm.mi_loadsolution()
-        print(femm.mo_getcircuitproperties("Bobine"))
+        # print(femm.mo_getcircuitproperties("Bobine"))
         self.L0 = femm.mo_getcircuitproperties("Bobine")[2] / self._i0
         femm.mo_close()
         self.drawProjectile()

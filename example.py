@@ -335,29 +335,11 @@ def l_construct(cas):
     test = coilCalculator(True)
     test.defineCoil(Lb, Rbi, Rbo)
     test.drawCoil()
-    test.defineProjectile(Lp, Rp, mu=mu)  # /!\ TEST /!\
+    test.defineProjectile(Lp, Rp, mu=mu)
     test.drawProjectile()
     test.setSpace()
     test.computeL0()
     test.computedLz()
-    convex = convexApprox.Convex_approx(test.dLz_z, test.dLz)
-    lz = splinify.splinify(test.dLz_z, convex.run_approx(), test.L0)
-
-    z = numpy.linspace(lz.z[0], lz.z[-1], 5000)
-
-    ax1 = plt.subplot(311)
-    plt.plot(z, lz.Lz()(z), color=(0, 0, 1))
-    plt.setp(ax1.get_xticklabels())
-
-    ax2 = plt.subplot(312, sharex=ax1)
-    plt.plot(lz.z, test.dLz, color=(1, 0, 0))
-    plt.plot(z, lz.dLz()(z), color=(0, 0, 1))
-    plt.setp(ax2.get_xticklabels(), visible=False)
-
-    plt.subplot(313, sharex=ax1)
-    plt.plot(lz.z, discrete_fprime(test.dLz, test.dLz_z), color=(1, 0, 0))
-    plt.plot(z, lz.d2Lz()(z), color=(0, 0, 1))
-    plt.show()
     return test
 
 
@@ -404,6 +386,7 @@ def plot_l_b(test):
 
     plt.subplot(313, sharex=ax1)
     plt.plot(lz.z, discrete_fprime(test.dLz, test.dLz_z), color=(1, 0, 0))
+    plt.plot(lz.z, convex.run_approx(), color=(0, 1, 0))
     plt.plot(z, lz.d2Lz()(z), color=(0, 0, 1))
     plt.show()
 # l_construct(cas_3)
@@ -469,23 +452,23 @@ for i in r:
 
 def vs_old_maple():
     coil = l_construct({
-        'Lp': 20,
-        'Rp': 4,
-        'Lb': 8,
+        'Lp': 22,
+        'Rp': 4.5,
+        'Lb': 31,
         'Rbi': 6,
         'Rbo': 7,
-        'mu': 200,
+        'mu': 3.5,
     })
     convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
     lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
-    plot_l(coil)
+    plot_l_b(coil)
     print("rb", coil.resistance)
     test = solver.gaussSolver(lz, C=0.0050, R=0.016 + 0.075, E=170, m=0.0109)
-    res = test._linear_opt(-0.02, plot=True, plot3d=True, epsilon=0.001)
+    res = test._linear_opt(-0.08, plot=True, plot3d=True, epsilon=0.001)
     # print(res)
     test.plot_single(res[1])
     print(test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 10000) / 100) + "%")
     return (test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
 
 
-I_impact(cas_3)
+vs_old_maple()
