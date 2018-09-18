@@ -1,0 +1,21 @@
+axes.titlesize : 10
+axes.labelsize : 10
+lines.linewidth : 1.0
+lines.markersize : 10
+xtick.labelsize : 8
+ytick.labelsize : 8
+grid.color       :   k
+grid.linestyle   :   :
+grid.linewidth   :   0.5
+mathtext.fontset: cm
+mathtext.rm : serif
+axes.prop_cycle    : cycler('color', 'bgrcmyk')
+axes.autolimit_mode: round_numbers
+axes.xmargin: 0
+axes.ymargin: 0
+axes.spines.top    : False
+axes.spines.right  : False
+xtick.minor.visible : True
+xtick.minor.size : 1.5
+ytick.minor.visible : True
+ytick.minor.size : 1.5

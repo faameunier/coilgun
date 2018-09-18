@@ -1,0 +1,27 @@
+	{
+	"build_systems":
+	[
+		{
+			"env":
+			{
+				"LC_CTYPE": "UTF-8",
+				"MPLCONFIGDIR": "."
+			},
+			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
+			"name": "Anaconda Python Builder",
+			"selector": "source.python",
+			"shell_cmd": "F:\\Projets\\CG\\venv\\Scripts\\python -u \"$file\""
+		}
+	],
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],
+	"settings":
+	{
+		"python_interpreter": "F:\\Projets\\CG\\venv\\Scripts\\python",
+		"test_command": "F:\\Projets\\CG\\venv\\Scripts\\python -m unittest -v"
+	}
+}
