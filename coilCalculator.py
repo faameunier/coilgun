@@ -5,7 +5,7 @@ from progbar import progbar
 
 class coilCalculator:
     __nyq_secu = 1.01
-    __space_factor = 10
+    __space_factor = 5
 
     def __init__(self, bHide=False, meshsize=1, _i0=100):
         self.meshsize = meshsize

@@ -101,6 +101,6 @@ def plot_l_b(coil, spline, convex):
 
 
 # build_some_coils(30)
-build_a_coil(800)
-find_optimal_launch(800, C=0.0024, E=400, R=0.07, plot=True, plot3d=True)
+# build_a_coil(800)
+# find_optimal_launch(800, C=0.0024, E=400, R=0.07, plot=True, plot3d=False)
 # find_optimal_launch(10, C=0.0024, E=400, R=0.07, plot=True, plot3d=True)

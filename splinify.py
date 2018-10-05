@@ -1,4 +1,5 @@
 from scipy.interpolate import UnivariateSpline
+from numpy import vectorize
 
 
 class splinify:
@@ -20,10 +21,10 @@ class splinify:
             raise BaseException("No data to interpolate")
 
     def dLz(self):
-        return self._dLz
+        return vectorize(lambda x: -self._dLz(-x) if x > 0 else self._dLz(x))
 
     def d2Lz(self):
-        return self._d2Lz
+        return vectorize(lambda x: self._d2Lz(-x) if x > 0 else self._d2Lz(x))
 
     def Lz(self):
-        return lambda x: self._Lz(x) + self.l0
+        return vectorize(lambda x: self._Lz(-x) + self.l0 if x > 0 else self._Lz(x) + self.l0)

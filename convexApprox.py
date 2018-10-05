@@ -2,7 +2,7 @@ import numpy
 from scipy.optimize import minimize
 from scipy.optimize import Bounds
 from scipy.signal import convolve
-from signalProcessing import lFilter
+# from signalProcessing import lFilter
 
 
 class Convex_approx_1:

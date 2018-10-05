@@ -8,6 +8,7 @@ import convexApprox
 import splinify
 import datastore
 import solver
+# import firFilter
 
 
 def discrete_fprime(f, z):
@@ -497,4 +498,13 @@ def advanced_linear_test(loc, plot=False, plot3d=False):
     return (test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
 
 
-advanced_linear_test(30, True, True)
+def d2L_filtered(loc):
+    coil = datastore.coils.iloc[loc]
+    # lpfilter = firFilter.lFilter(coil.dLz_z, coil.dLz, 1000)
+    # lpfilter.plot()
+    convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
+    splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
+    plot_l_b(coil)
+
+
+d2L_filtered(800)
