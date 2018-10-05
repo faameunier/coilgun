@@ -3,8 +3,9 @@ import numpy
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import pltHelper
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
+# from mpl_toolkits.mplot3d import Axes3D
+# from matplotlib import cm
+from mayavi import mlab
 
 
 class gaussSolver:
@@ -103,7 +104,7 @@ class gaussSolver:
         else:
             return (z0[1], res[1])
 
-    def _linear_opt(self, bound, epsilon=0.0005, plot=False, plot3d=False):
+    def _linear_opt(self, bound, epsilon=0.00025, plot=False, plot3d=False):
         res = []
         z0 = []
         i = 0
@@ -135,14 +136,38 @@ class gaussSolver:
             plt.show()
 
         if plot3d:
+            """
             fig = plt.figure()
             ax = fig.gca(projection='3d')
             X, Y = numpy.meshgrid(self.t, z0)
             # print(numpy.shape(X))
             # print(numpy.shape(Y))
             # print(numpy.shape(res))
-            ax.plot_surface(X, Y, res[:, :, 3], cmap=cm.viridis, linewidth=0, antialiased=False, rcount=100, ccount=100)
+            ax.plot_surface(X, Y, res[:, :, 3], cmap=cm.viridis, linewidth=0, antialiased=False, rcount=200, ccount=200)
             plt.show()
+            """
+            X, Y = numpy.meshgrid(self.t, z0)
+            im = res[:, :, 3]
+
+            # fig = plt.figure()
+            # x = fig.add_subplot(111, projection='3d')
+            mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+            src = mlab.pipeline.array2d_source(im)
+            warp = mlab.pipeline.warp_scalar(src)
+            normals = mlab.pipeline.poly_data_normals(warp)
+            surf = mlab.pipeline.surface(normals, colormap="viridis")
+            x_scale = numpy.max(self.t)
+            y_scale = numpy.abs(numpy.max(z0) - numpy.min(z0))
+            z_scale = numpy.abs(numpy.max(numpy.array(res[:, :, 3])[:, -1]) - numpy.min(numpy.array(res[:, :, 3])[:, -1]))
+            max_scale = numpy.max([x_scale, y_scale])  # , z_scale])
+            print([x_scale, y_scale, z_scale])
+            print(max_scale)
+            print((1.0 * x_scale / max_scale, 1.0 * y_scale / max_scale, 1.0))
+            surf.actor.actor.scale = (1, 0.1, 1)
+            axes = mlab.axes(surf)
+            axes.label_text_property.font_size = 10
+            axes.label_text_property.font_family = 'courier'
+            mlab.show()
 
         print(res[:, :, 3])
         arg = numpy.argmax(numpy.array(res[:, :, 3])[:, -1])

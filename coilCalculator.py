@@ -5,6 +5,7 @@ from progbar import progbar
 
 class coilCalculator:
     __nyq_secu = 1.01
+    __space_factor = 10
 
     def __init__(self, bHide=False, meshsize=1, _i0=100):
         self.meshsize = meshsize
@@ -44,7 +45,7 @@ class coilCalculator:
                     self.phi = phi
                     self.rho = rho
                     self.n = Lb / phi * (Rbo - Rbi) / phi
-                    self.resistance = 4 * rho * (Rbo**2 - Rbi**2) * Lb / phi**4
+                    self.resistance = 4 * rho * ((Rbo * 10**-3)**2 - (Rbi * 10**-3)**2) * (Lb * 10**-3) / (phi * 10**-3)**4
                     self.deleteCoil()
                 else:
                     raise BaseException("Impossible coil/projectile geometry.")
@@ -62,7 +63,7 @@ class coilCalculator:
     def drawCoil(self):
         if self.Lb is not None:
             femm.mi_clearselected()
-            femm.mi_addmaterial("Cuivre", 1, 1, 0, 0, 1 / self.rho * 10**11, 0, 0, 1, 3 if self.wire_type == "round" else 6, 0, 0, 1, self.phi)
+            femm.mi_addmaterial("Cuivre", 1, 1, 0, 0, 1 / self.rho * 10**-6, 0, 0, 1, 3 if self.wire_type == "round" else 6, 0, 0, 1, self.phi)
             femm.mi_addnode(self.Rbi, -self.Lb / 2)
             femm.mi_addnode(self.Rbo, -self.Lb / 2)
             femm.mi_addnode(self.Rbi, self.Lb / 2)
@@ -143,7 +144,7 @@ class coilCalculator:
     def setSpace(self):
         if self.Lp is not None and self.Lb is not None:
             femm.mi_clearselected()
-            self.espace = 3 * max(self.Lb, self.Rbo, self.Lp)
+            self.espace = self.__space_factor * max(self.Lb, self.Rbo, self.Lp)
             femm.mi_addblocklabel(2 * self.Rbo, 0)
             femm.mi_selectlabel(2 * self.Rbo, 0)
             femm.mi_setblockprop("Air", 0, self.meshsize, "<None>", 0, 3, 0)
@@ -159,11 +160,12 @@ class coilCalculator:
         femm.mi_loadsolution()
         # print(femm.mo_getcircuitproperties("Bobine"))
         self.L0 = femm.mo_getcircuitproperties("Bobine")[2] / self._i0
+        self.resistance = femm.mo_getcircuitproperties("Bobine")[1] / self._i0
         femm.mo_close()
         self.drawProjectile()
 
     def computedLz(self, ite=0, rType="linear"):
-        # print(self.__i0)
+        # print(self._i0)
         self.deleteProjectile()
         self.drawProjectile()
         (pas, pos, ite) = self._compute_range(ite, rType)

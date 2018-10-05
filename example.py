@@ -324,7 +324,7 @@ plt.show()
 """
 
 
-def l_construct(cas):
+def l_construct(cas, space=3):
     # Mu impact
     Lp = cas["Lp"]
     Rp = cas["Rp"]
@@ -333,6 +333,7 @@ def l_construct(cas):
     Rbo = cas["Rbo"]
     mu = cas['mu']
     test = coilCalculator(True)
+    test._coilCalculator__space_factor = space
     test.defineCoil(Lb, Rbi, Rbo)
     test.drawCoil()
     test.defineProjectile(Lp, Rp, mu=mu)
@@ -366,7 +367,7 @@ def plot_l(test):
 
 def plot_l_b(test):
     convex = convexApprox.Convex_approx(test.dLz_z, test.dLz, order=2)
-
+    print(test.dLz_z, test.dLz)
     # plt.plot(convex._d2Lz)
     # plt.plot(convex.run_approx())
     # plt.show()
@@ -447,7 +448,7 @@ for i in r:
 # plot_l(datastore.coils.iloc[5])
 """
 
-# linear_test(5, True)
+# linear_test(5, True, True)
 
 
 def vs_old_maple():
@@ -471,4 +472,29 @@ def vs_old_maple():
     return (test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
 
 
-vs_old_maple()
+# vs_old_maple()
+
+def advanced_linear_test(loc, plot=False, plot3d=False):
+    coil = datastore.coils.iloc[loc]
+    coil = l_construct({
+        'Lp': coil.Lp,
+        'Rp': coil.Rp,
+        'Lb': coil.Lb,
+        'Rbi': coil.Rbi,
+        'Rbo': coil.Rbo,
+        'mu': 100
+    }, space=5)
+    convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
+    lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
+    if plot:
+        plot_l_b(coil)
+    test = solver.gaussSolver(lz, C=0.0047, R=0.1 + coil.resistance, E=450, m=0.031)
+    res = test._linear_opt(-(5 * coil.Lb) / 2000, plot=plot, plot3d=plot3d, epsilon=0.00005)
+    # print(res)
+    if plot:
+        test.plot_single(res[1])
+    print(test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
+    return (test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
+
+
+advanced_linear_test(30, True, True)

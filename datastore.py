@@ -8,10 +8,10 @@ from shutil import copyfile
 
 def populate_coils(coils):
     lp = 20
-    rp = 8
+    rp = 4
     lb = numpy.linspace(20, 100, 81)
-    rbi = 9
-    rbo = numpy.linspace(10, 40, 31)
+    rbi = 5
+    rbo = numpy.linspace(6, 15, 10)
     temp_id = 0
     for l in lb:
         for rb in rbo:
