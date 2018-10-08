@@ -11,12 +11,13 @@ def populate_coils(coils):
     rp = 4
     lb = numpy.linspace(20, 100, 81)
     rbi = 5
-    rbo = numpy.linspace(6, 15, 10)
+    rbo = numpy.linspace(6, 11, 6)
     temp_id = 0
+    phi = 1
     for l in lb:
         for rb in rbo:
-            coil = pd.Series([temp_id, lp, rp, l, rbi, rb, 100, False, numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan],
-                             index=['id', 'Lp', 'Rp', 'Lb', 'Rbi', 'Rbo', 'mu', 'mu_approx_valid', 'resistance', 'n_points', 'dLz_z', 'dLz', 'L0', 'splinify'])
+            coil = pd.Series([temp_id, lp, rp, l, rbi, rb, 100, False, phi, numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan],
+                             index=['id', 'Lp', 'Rp', 'Lb', 'Rbi', 'Rbo', 'mu', 'mu_approx_valid', 'phi', 'resistance', 'n_points', 'dLz_z', 'dLz', 'L0', 'splinify'])
             coils = coils.append(coil, ignore_index=True)
             temp_id += 1
     return coils
@@ -27,6 +28,7 @@ def save_all():
 
 
 def update_coil(coil):
+    print(coil)
     coils.loc[coil.name] = coil
 
 
@@ -49,6 +51,7 @@ if '/coils' not in store.keys():
         'Rbi': float,
         'Rbo': float,
         'mu': float,
+        'phi': float,
         'resistance': float,
         'n_points': float,
         'dLz_z': object,
@@ -67,6 +70,7 @@ if '/coils' not in store.keys():
         'Rbi': [],
         'Rbo': [],
         'mu': [],
+        'phi': [],
         'mu_approx_valid': [],
         'resistance': [],
         'n_points': [],

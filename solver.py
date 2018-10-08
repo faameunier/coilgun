@@ -75,7 +75,7 @@ class gaussSolver:
 
     def computeMaxEc(self, result):
         v_max = result[:, 3][-1]
-        print(v_max)
+        # print(v_max)
         return 1 / 2 * self.m * v_max**2
 
     def computeMaxE(self, result):

@@ -7,6 +7,7 @@ import datastore
 import solver
 import convexApprox
 import splinify
+from multiprocessing import Pool
 
 
 def discrete_fprime(f, z):
@@ -24,7 +25,7 @@ def coil_construct(coil):
     Rbi = coil["Rbi"]
     Rbo = coil["Rbo"]
     mu = coil["mu"]
-    test = coilCalculator.coilCalculator(True, meshsize=10)
+    test = coilCalculator.coilCalculator(True)
     test.defineCoil(Lb, Rbi, Rbo)
     test.drawCoil()
     test.defineProjectile(Lp, Rp, mu=mu)
@@ -43,21 +44,22 @@ def coil_construct(coil):
 
 
 def build_some_coils(n=10):
-    i = 0
-    for index, coil in datastore.coils[datastore.coils['dLz'].isnull()].iterrows():
-        print(index)
-        coil_construct(coil)
+    coils = []
+    for index, coil in datastore.coils[datastore.coils['dLz'].isnull()][:n].iterrows():
+        coils.append(coil)
+    # print(coils)
+    with Pool(8) as p:
+        coils = p.map(_build_a_coil, coils)
+        # coil_construct(coil)
+    for coil in coils:
         datastore.update_coil(coil)
         # datastore.save_all()
-        i += 1
-        if i == n:
-            break
 
 
-def build_a_coil(iloc):
-    coil = datastore.coils.iloc[iloc]
+def _build_a_coil(coil):
+    print(coil.name)
     coil_construct(coil)
-    datastore.update_coil(coil)
+    return coil
 
 
 def find_optimal_launch(loc, C, R, E, plot=False, plot3d=False):
@@ -68,7 +70,7 @@ def find_optimal_launch(loc, C, R, E, plot=False, plot3d=False):
     if plot:
         plot_l_b(coil, lz, convex)
     test = solver.gaussSolver(lz, C=C, R=R + coil.resistance, E=E, m=m)
-    res = test._linear_opt(-(10 * coil.Lb) / 2000, plot=plot, plot3d=plot3d, epsilon=0.00005)
+    res = test._linear_opt(-(5 * coil.Lb) / 2000, plot=plot, plot3d=plot3d, epsilon=0.00005)
     # print(res)
     if plot:
         test.plot_single(res[1])
@@ -100,7 +102,8 @@ def plot_l_b(coil, spline, convex):
     plt.show()
 
 
-# build_some_coils(30)
+if __name__ == '__main__':
+    build_some_coils(30)
 # build_a_coil(800)
 # find_optimal_launch(800, C=0.0024, E=400, R=0.07, plot=True, plot3d=False)
 # find_optimal_launch(10, C=0.0024, E=400, R=0.07, plot=True, plot3d=True)

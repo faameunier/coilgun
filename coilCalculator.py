@@ -1,6 +1,7 @@
 import femm
 import numpy
 from progbar import progbar
+import os
 
 
 class coilCalculator:
@@ -8,6 +9,7 @@ class coilCalculator:
     __space_factor = 5
 
     def __init__(self, bHide=False, meshsize=1, _i0=100):
+        self._seed = str(numpy.random.randint(10000))
         self.meshsize = meshsize
         self.Lb = None
         self.Rbi = None
@@ -27,7 +29,7 @@ class coilCalculator:
         femm.openfemm(bHide)
         femm.create(0)
         femm.mi_probdef(0, "millimeters", "axi", 1E-16)
-        femm.mi_saveas("temp/temp.fem")
+        femm.mi_saveas("temp/temp" + self._seed + ".fem")
         femm.mi_addcircprop("Bobine", self._i0, 1)
         femm.mi_addmaterial("Air", 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
 
@@ -259,4 +261,9 @@ class coilCalculator:
             return False
 
     def estFreq(self):
-        return 2 / (min(self.Lb, self.Lp) * 10**-3)
+        return 4 / (min(self.Lb, self.Lp) * 10**-3)
+
+    def __del__(self):
+        femm.closefemm()
+        os.remove("temp/temp" + self._seed + ".fem")
+        os.remove("temp/temp" + self._seed + ".ans")
