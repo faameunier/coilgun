@@ -23,6 +23,22 @@ def populate_coils(coils):
     return coils
 
 
+def populate_setups(setups):
+    E = 400
+    C = 0.0024
+    R = 0.07
+    setup = pd.Series([0, C, E, R],
+                      index=['id', 'C', 'E', 'R'])
+    setups = setups.append(setup, ignore_index=True)
+    setup = pd.Series([0, C, E / 2, R],
+                      index=['id', 'C', 'E', 'R'])
+    setups = setups.append(setup, ignore_index=True)
+    setup = pd.Series([0, C / 2, E, R],
+                      index=['id', 'C', 'E', 'R'])
+    setups = setups.append(setup, ignore_index=True)
+    return setups
+
+
 def save_all():
     store.put('coils', coils)
 
@@ -41,8 +57,9 @@ def backup():
 store = pd.HDFStore('store.h5')
 
 
+# ==== COILS CHECK
 if '/coils' not in store.keys():
-    print("store empty")
+    print("coils store empty")
     dtypes = {
         'id': 'int64',
         'Lp': float,
@@ -90,6 +107,32 @@ if '/coils' not in store.keys():
 
 
 coils = store['coils']
+
+# ==== SETUP CHECK
+if '/setups' not in store.keys():
+    print("setups store empty")
+    dtypes = {
+        'id': 'int64',
+        'C': float,
+        'E': float,
+        'R': float,
+    }
+
+    setups = pd.DataFrame({
+        'id': [],
+        'C': [],
+        'E': [],
+        'R': [],
+    })
+
+    setups = populate_setups(setups)
+    for setup, dtype in dtypes.items():
+        setups[setup] = setups[setup].astype(dtype)
+    setups.set_index(['id'], inplace=True)
+    store.put('setups', setups)
+
+
+setups = store['setups']
 
 # ==== EXIT
 atexit.register(backup)

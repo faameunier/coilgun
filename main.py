@@ -48,7 +48,7 @@ def build_some_coils(n=10):
     for index, coil in datastore.coils[datastore.coils['dLz'].isnull()][:n].iterrows():
         coils.append(coil)
     # print(coils)
-    with Pool(8) as p:
+    with Pool(4) as p:
         coils = p.map(_build_a_coil, coils)
         # coil_construct(coil)
     for coil in coils:
@@ -103,7 +103,7 @@ def plot_l_b(coil, spline, convex):
 
 
 if __name__ == '__main__':
-    build_some_coils(30)
+    build_some_coils(15)
 # build_a_coil(800)
 # find_optimal_launch(800, C=0.0024, E=400, R=0.07, plot=True, plot3d=False)
 # find_optimal_launch(10, C=0.0024, E=400, R=0.07, plot=True, plot3d=True)
