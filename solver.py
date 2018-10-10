@@ -11,12 +11,13 @@ from mayavi import mlab
 class gaussSolver:
     __n = 10000
 
-    def __init__(self, l, C, E, m, R):
+    def __init__(self, l, C, E, m, R, v0=0):
         self.l_splin = l
         self.C = C
         self.R = R
         self.E = E
         self.m = m
+        self.v0 = v0
         lambd = self.R / (2 * self.l_splin.l0)
         omega_2 = 1 / (self.l_splin.l0 * self.C)
         if lambd**2 <= omega_2:
@@ -84,27 +85,27 @@ class gaussSolver:
     def computeTau(self, result):
         return self.computeMaxEc(result) / self.computeMaxE(result)
 
-    def _dicho_opt(self, bound, ite=50):
-        temp_tau = 0
-        i = 1
-        res = (self.solve(bound, 0), self.solve(0, 0))
-        z0 = (bound, 0)
-        while i < ite:
-            temp_tau = (self.computeTau(res[0]), self.computeTau(res[1]))
-            print(z0, temp_tau)
-            if temp_tau[0] > temp_tau[1]:
-                z0 = (z0[0], numpy.mean(z0))
-                res = (res[0], self.solve(z0[1], 0))
-            else:
-                z0 = (numpy.mean(z0), z0[1])
-                res = (self.solve(z0[0], 0), res[1])
-            i += 1
-        if temp_tau[0] > temp_tau[1]:
-            return (z0[0], res[0])
-        else:
-            return (z0[1], res[1])
+    # def _dicho_opt(self, bound, ite=50):
+    #     temp_tau = 0
+    #     i = 1
+    #     res = (self.solve(bound, 0), self.solve(0, 0))
+    #     z0 = (bound, 0)
+    #     while i < ite:
+    #         temp_tau = (self.computeTau(res[0]), self.computeTau(res[1]))
+    #         print(z0, temp_tau)
+    #         if temp_tau[0] > temp_tau[1]:
+    #             z0 = (z0[0], numpy.mean(z0))
+    #             res = (res[0], self.solve(z0[1], 0))
+    #         else:
+    #             z0 = (numpy.mean(z0), z0[1])
+    #             res = (self.solve(z0[0], 0), res[1])
+    #         i += 1
+    #     if temp_tau[0] > temp_tau[1]:
+    #         return (z0[0], res[0])
+    #     else:
+    #         return (z0[1], res[1])
 
-    def _linear_opt(self, bound, epsilon=0.00025, plot=False, plot3d=False):
+    def _linear_opt(self, bound, epsilon=0.0005, plot=False, plot3d=False):
         res = []
         z0 = []
         i = 0
@@ -113,7 +114,7 @@ class gaussSolver:
         for i in range(n):
             print(i / n * 100)
             z0.append(bound + epsilon * i)
-            res.append(self.solve(bound + epsilon * i, 0))
+            res.append(self.solve(bound + epsilon * i, self.v0))
         res = numpy.array(res)
 
         if plot:
@@ -169,12 +170,12 @@ class gaussSolver:
             axes.label_text_property.font_family = 'courier'
             mlab.show()
 
-        print(res[:, :, 3])
+        # print(res[:, :, 3])
         arg = numpy.argmax(numpy.array(res[:, :, 3])[:, -1])
         return (z0[arg], res[arg])
 
-    def computeOptimal(self, bound, method="linear"):
+    def computeOptimal(self, bound, method="linear", plot=False, plot3d=False):
         if method not in ["dicho", "linear"]:
             raise BaseException("Only linear opt available.")
-        elif method == "lineaar":
-            return self._linear_opt(bound)
+        elif method == "linear":
+            return self._linear_opt(bound, plot=plot, plot3d=plot)
