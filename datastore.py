@@ -16,8 +16,8 @@ def populate_coils(coils):
     phi = 1
     for l in lb:
         for rb in rbo:
-            coil = pd.Series([temp_id, lp, rp, l, rbi, rb, 100, False, phi, numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan],
-                             index=['id', 'Lp', 'Rp', 'Lb', 'Rbi', 'Rbo', 'mu', 'mu_approx_valid', 'phi', 'resistance', 'n_points', 'dLz_z', 'dLz', 'L0', 'splinify'])
+            coil = pd.Series([temp_id, lp, rp, l, rbi, rb, 100, False, phi, numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan],
+                             index=['id', 'Lp', 'Rp', 'Lb', 'Rbi', 'Rbo', 'mu', 'mu_approx_valid', 'phi', 'resistance', 'n_points', 'dLz_z', 'dLz', 'L0', 'mu_points', 'mu_Lz_0'])
             coils = coils.append(coil, ignore_index=True)
             temp_id += 1
     return coils
@@ -41,11 +41,22 @@ def populate_setups(setups):
 
 def save_all():
     store.put('coils', coils)
+    store.put('setups', setups)
+    store.put('solutions', solutions)
 
 
 def update_coil(coil):
-    print(coil)
     coils.loc[coil.name] = coil
+
+
+def save_setup(setup):
+    global setups
+    setups = setups.append(setup, ignore_index=True)
+
+
+def save_solution(solution):
+    global solutions
+    solutions = solutions.append(solution, ignore_index=True)
 
 
 def backup():
@@ -75,7 +86,7 @@ if '/coils' not in store.keys():
         'dLz': object,
         'L0': float,
         'mu_points': object,
-        'mu_dLz_0': object,
+        'mu_Lz_0': object,
         'mu_approx_valid': bool,
     }
 
@@ -95,7 +106,7 @@ if '/coils' not in store.keys():
         'dLz': [],
         'L0': [],
         'mu_points': [],
-        'mu_dLz_0': [],
+        'mu_Lz_0': [],
         'mu_approx_valid': bool,
     })
 
@@ -133,6 +144,39 @@ if '/setups' not in store.keys():
 
 
 setups = store['setups']
+
+# ==== SOLUTION CHECK
+if '/solutions' not in store.keys():
+    print("solutions store empty")
+    dtypes = {
+        'id': 'int64',
+        'coil': 'int64',
+        'setup': 'int64',
+        'z0': float,
+        'v0': float,
+        'v1': float,
+        'Ec': float,
+        'tau': float,
+        'chained': 'int64',
+    }
+
+    solutions = pd.DataFrame({
+        'id': [],
+        'coil': [],
+        'setup': [],
+        'z0': [],
+        'v0': [],
+        'v1': [],
+        'Ec': [],
+        'tau': [],
+        'chained': [],
+    })
+
+    solutions.set_index(['id'], inplace=True)
+    store.put('solutions', solutions)
+
+
+solutions = store['solutions']
 
 # ==== EXIT
 atexit.register(backup)

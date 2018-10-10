@@ -18,7 +18,6 @@ def discrete_fprime(f, z):
 
 
 def coil_construct(coil):
-    # Mu impact
     Lp = coil["Lp"]
     Rp = coil["Rp"]
     Lb = coil["Lb"]
@@ -33,13 +32,10 @@ def coil_construct(coil):
     test.setSpace()
     test.computeL0()
     test.computedLz()
-    # convex = convexApprox.Convex_approx(test.dLz_z, test.dLz)
-    # lz = splinify.splinify(test.dLz_z, convex.run_approx(), test.L0)
     coil['L0'] = test.L0
     coil['dLz'] = test.dLz
     coil['dLz_z'] = test.dLz_z
     coil['n_points'] = len(test.dLz_z)
-    # coil['splinify'] = lz
     coil['resistance'] = test.resistance
 
 
@@ -48,7 +44,7 @@ def build_some_coils(n=10):
     for index, coil in datastore.coils[datastore.coils['dLz'].isnull()][:n].iterrows():
         coils.append(coil)
     # print(coils)
-    with Pool(4) as p:
+    with Pool(8) as p:
         coils = p.map(_build_a_coil, coils)
         # coil_construct(coil)
     for coil in coils:
@@ -66,7 +62,7 @@ def find_optimal_launch(loc, C, R, E, plot=False, plot3d=False):
     coil = datastore.coils.iloc[loc]
     m = numpy.pi * coil.Rp**2 * coil.Lp * 7860 * 10 ** (-9)
     convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
-    lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
+    lz = splinify.splinify(convex.dL²z_z, coil.L0, d2L=convex.run_approx())
     if plot:
         plot_l_b(coil, lz, convex)
     test = solver.gaussSolver(lz, C=C, R=R + coil.resistance, E=E, m=m)

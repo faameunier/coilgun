@@ -126,7 +126,12 @@ class Convex_approx_1:
         self.x0 = x0
 
     def minimize(self):
-        res = minimize(self.distance, self.x0, jac=self.distance_jac, method='SLSQP', constraints=[self.eq_cons, self.ineq_cons], options={'ftol': self.__precision, 'disp': self.details, 'maxiter': 1000}, bounds=self.bounds)
+        cons = []
+        if self.n_points > 2:  # if there are only 2 points, there are no ineq cons
+            cons = [self.eq_cons, self.ineq_cons]
+        else:
+            cons = [self.eq_cons]
+        res = minimize(self.distance, self.x0, jac=self.distance_jac, method='SLSQP', constraints=cons, options={'ftol': self.__precision, 'disp': self.details, 'maxiter': 1000}, bounds=self.bounds)
         res = res.x
         if self.concave:
             res = res * -1

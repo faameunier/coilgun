@@ -228,7 +228,7 @@ class coilCalculator:
         else:
             raise BaseException("Unknown node computation type.")
 
-    def computeMuImpact(self, mus=[1, 5, 10, 50, 100, 500, 1000, 5000], error=0.05):
+    def computeMuImpact(self, mus=[5, 10, 50, 100, 500, 1000, 5000], error=0.05):
         _mu = self.mu
         res = []
         test_res = []
@@ -244,26 +244,37 @@ class coilCalculator:
             femm.mo_groupselectblock(1)
             res.append(femm.mo_getcircuitproperties("Bobine")[2] / self._i0)
 
-            femm.mi_movetranslate2(0, self.Lb / 2, 4)
+            femm.mi_movetranslate2(0, self.Lb / 4, 4)
             femm.mi_analyze()
             femm.mi_loadsolution()
             femm.mo_groupselectblock(1)
             test_res.append(femm.mo_getcircuitproperties("Bobine")[2] / self._i0)
         self.mu = _mu
         success = True
-        for i in range(1, len(test_res)):
-            if numpy.abs((res[i] / res[0]) / (test_res[i] / test_res[0]) - 1) > error:
+        errors = []
+        for i in range(0, len(test_res)):
+            errors.append(numpy.abs((res[i] / res[0]) / (test_res[i] / test_res[0]) - 1))
+            print(numpy.abs(res[i] / res[0]) * 100, numpy.abs(test_res[i] / test_res[0]) * 100)
+            if errors[-1] > error:
                 success = False
-                break
+                # break
         if success:
-            return (mus, res)
+            return {'valid': True,
+                    'mus': mus,
+                    'mu_Lz_0': res,
+                    'mu_Lz_1': test_res,
+                    'errors': errors}
         else:
-            return False
+            return {'valid': False,
+                    'mus': mus,
+                    'mu_Lz_0': res,
+                    'mu_Lz_1': test_res,
+                    'errors': errors}
 
     def estFreq(self):
         return 4 / (min(self.Lb, self.Lp) * 10**-3)
 
     def __del__(self):
-        femm.closefemm()
+        # femm.closefemm()
         os.remove("temp/temp" + self._seed + ".fem")
         os.remove("temp/temp" + self._seed + ".ans")

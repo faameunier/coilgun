@@ -167,20 +167,56 @@ def Mu_impact(cas):
     Lb = cas["Lb"]
     Rbi = cas["Rbi"]
     Rbo = cas["Rbo"]
-    mu = [5, 10, 50, 100, 500, 1000, 5000]
+    mu = [5, 10, 50, 100, 500, 1000, 5000]  # [5, 10, 50, 100, 500, 1000, 5000]
     n = len(mu)
     res = []
     for k in range(n):
-        test = coilCalculator(True, 3)
+        test = coilCalculator(True, 10)
         test.defineCoil(Lb, Rbi, Rbo)
         test.drawCoil()
         test.defineProjectile(Lp, Rp, mu=mu[k])
         test.drawProjectile()
         test.setSpace()
         test.computeL0()
-        test.computedLz(ite=50)
+        test.computedLz()
         res += [max(test.dLz)]
-        plt.plot(test.dLz_z, test.dLz / max(test.dLz), color=(k / n, 0, 1 - k / n), label=k)
+        convex = convexApprox.Convex_approx(test.dLz_z, test.dLz, order=2)
+        lz = splinify.splinify(convex.dLz_z, test.L0, d2L=convex.run_approx())
+        z = numpy.linspace(2 * lz.z[0], 2 * lz.z[-1], 10000)
+
+        ax1 = plt.subplot(321)
+        plt.plot(z, lz.Lz()(z), color=(k / n, 0, 1 - k / n), label=k)
+        plt.setp(ax1.get_xticklabels(), visible=False)
+        # plt.setp(ax1.get_yticklabels())
+
+        ax1 = plt.subplot(322, sharex=ax1)
+        plt.plot(z, (lz.Lz()(z) - test.L0) / res[-1] + test.L0, color=(k / n, 0, 1 - k / n), label=k)
+        plt.setp(ax1.get_xticklabels(), visible=False)
+        # plt.setp(ax1.get_yticklabels(), visible=False)
+
+        ax2 = plt.subplot(323, sharex=ax1)
+        # plt.plot(test.dLz_z, test.dLz, color=(0, k / n, 1 - k / n))
+        plt.plot(z, lz.dLz()(z), color=(k / n, 0, 1 - k / n), label=k)
+        plt.setp(ax2.get_xticklabels(), visible=False)
+        # plt.setp(ax2.get_yticklabels(), visible=False)
+
+        ax2 = plt.subplot(324, sharex=ax1)
+        plt.plot(z, lz.dLz()(z) / res[-1], color=(k / n, 0, 1 - k / n), label=k)
+        plt.setp(ax2.get_xticklabels(), visible=False)
+        # plt.setp(ax2.get_yticklabels(), visible=False)
+
+        plt.subplot(325, sharex=ax1)
+        # plt.plot(test.dLz_z, convex.run_approx(), color=(1 - k / n, k / n, 0))
+        # plt.plot(test.dLz_z, discrete_fprime(test.dLz, test.dLz_z), color=(0, k / n, 1 - k / n))
+        plt.plot(z, lz.d2Lz()(z), color=(k / n, 0, 1 - k / n), label=k)
+
+        plt.subplot(326, sharex=ax1)
+        # plt.plot(test.dLz_z, convex.run_approx(), color=(1 - k / n, k / n, 0))
+        # plt.plot(test.dLz_z, discrete_fprime(test.dLz, test.dLz_z), color=(0, k / n, 1 - k / n))
+        plt.plot(z, lz.d2Lz()(z) / res[-1], color=(k / n, 0, 1 - k / n), label=k)
+        plt.setp(ax1.get_xticklabels(), visible=False)
+        # plt.setp(ax3.get_yticklabels(), visible=False)
+
     plt.show()
     # print(mu, res)
 
@@ -507,4 +543,35 @@ def d2L_filtered(loc):
     plot_l_b(coil)
 
 
-d2L_filtered(800)
+# d2L_filtered(800)
+
+
+def mu_impact(coil, full_print=False):
+    Lp = coil["Lp"]
+    Rp = coil["Rp"]
+    Lb = coil["Lb"]
+    Rbi = coil["Rbi"]
+    Rbo = coil["Rbo"]
+    mu = coil["mu"]
+    test = coilCalculator(True, 10)
+    test.defineCoil(Lb, Rbi, Rbo)
+    test.drawCoil()
+    test.defineProjectile(Lp, Rp, mu=mu)
+    test.drawProjectile()
+    test.setSpace()
+    output = test.computeMuImpact()
+    if output['valid']:
+        coil["mu_approx_valid"] = True
+        coil["mu_points"] = output['mus']
+        coil["mu_Lz_0"] = output['mu_Lz_0']
+    plt.plot(output['mus'], output['mu_Lz_0'])
+    plt.plot(output['mus'], output['mu_Lz_1'])
+    plt.plot(output['mus'], output['errors'])
+    plt.show()
+    print(output)
+    print(coil)
+    if full_print:
+        Mu_impact(coil)
+
+
+mu_impact(datastore.coils.iloc[100], True)
