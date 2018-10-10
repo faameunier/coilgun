@@ -228,7 +228,7 @@ class coilCalculator:
         else:
             raise BaseException("Unknown node computation type.")
 
-    def computeMuImpact(self, mus=[5, 10, 50, 100, 500, 1000, 5000], error=0.05):
+    def computeMuImpact(self, mus=[5, 10, 50, 100, 500, 1000, 5000], error=0.1):
         _mu = self.mu
         res = []
         test_res = []

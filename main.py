@@ -62,7 +62,7 @@ def find_optimal_launch(loc, C, R, E, plot=False, plot3d=False):
     coil = datastore.coils.iloc[loc]
     m = numpy.pi * coil.Rp**2 * coil.Lp * 7860 * 10 ** (-9)
     convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
-    lz = splinify.splinify(convex.dL²z_z, coil.L0, d2L=convex.run_approx())
+    lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
     if plot:
         plot_l_b(coil, lz, convex)
     test = solver.gaussSolver(lz, C=C, R=R + coil.resistance, E=E, m=m)
@@ -96,6 +96,27 @@ def plot_l_b(coil, spline, convex):
     plt.plot(spline.z, discrete_fprime(coil.dLz, coil.dLz_z), color=(1, 0, 0))
     plt.plot(z, spline.d2Lz()(z), color=(0, 0, 1))
     plt.show()
+
+
+def compute_mu_impact(coil, full_print=False):
+    Lp = coil["Lp"]
+    Rp = coil["Rp"]
+    Lb = coil["Lb"]
+    Rbi = coil["Rbi"]
+    Rbo = coil["Rbo"]
+    mu = coil["mu"]
+    test = coilCalculator(True, 10)
+    test.defineCoil(Lb, Rbi, Rbo)
+    test.drawCoil()
+    test.defineProjectile(Lp, Rp, mu=mu)
+    test.drawProjectile()
+    test.setSpace()
+    output = test.computeMuImpact()
+    if output['valid']:
+        coil["mu_approx_valid"] = True
+        coil["mu_points"] = output['mus']
+        coil["mu_Lz_0"] = output['mu_Lz_0']
+    return coil
 
 
 if __name__ == '__main__':
