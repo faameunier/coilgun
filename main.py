@@ -85,6 +85,18 @@ def build_solution(setup_id, coil_id, v0=0, chained=numpy.nan, plot=False):
     datastore.save_solution(solution)
 
 
+def build_some_solutions(setup_id, n=10):
+    coil_ids = datastore.coils.index.values.tolist()
+    print(datastore.solutions[datastore.solutions['setup'] == setup_id])
+    existing_sol = datastore.solutions[datastore.solutions['setup'] == setup_id]['coil']
+    remaining_coils = numpy.setdiff1d(coil_ids, existing_sol)
+    coil_ids = []
+    for i in range(n):
+        coil_ids.append((setup_id, remaining_coils[i]))
+    with Pool(8) as p:
+        p.map(build_solution, coil_ids)
+
+
 def plot_l_b(coil, spline, convex):
     print(coil.dLz_z, coil.dLz)
     # plt.plot(convex._d2Lz)
@@ -147,7 +159,7 @@ def compute_some_mu(n=10):
 if __name__ == '__main__':
     # compute_some_mu(100)
     # build_some_coils(15)
-    build_solution(0, 0, plot=True)
+    build_some_solutions(0, 10)
 # build_a_coil(800)
 # find_optimal_launch(800, C=0.0024, E=400, R=0.07, plot=True, plot3d=False)
 # find_optimal_launch(10, C=0.0024, E=400, R=0.07, plot=True, plot3d=True)
