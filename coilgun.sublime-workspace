@@ -4,6 +4,26 @@
 		"selected_items":
 		[
 			[
+				"save",
+				"save_solution\tfunction"
+			],
+			[
+				"setup",
+				"setup_id\tparam"
+			],
+			[
+				"exi",
+				"existing_sol\tstatement"
+			],
+			[
+				"coil_",
+				"coil_id\tparam"
+			],
+			[
+				"coil",
+				"coil_id"
+			],
+			[
 				"n",
 				"n_points\tstatement"
 			],
@@ -448,10 +468,6 @@
 				"dct_blocks\tfunction"
 			],
 			[
-				"save",
-				"save_img\tfunction"
-			],
-			[
 				"sa",
 				"save_img\tfunction"
 			],
@@ -498,22 +514,6 @@
 			[
 				"mul",
 				"multiScrap\tstatement"
-			],
-			[
-				"Airbnb",
-				"Airbnb_scrapper\tmodule"
-			],
-			[
-				"scrapProc",
-				"ScrapProcessor\tclass"
-			],
-			[
-				"da",
-				"dataExport\tparam"
-			],
-			[
-				"stra",
-				"strategyLocker\tparam"
 			]
 		]
 	},
@@ -542,7 +542,7 @@
 			"file": "main.py",
 			"settings":
 			{
-				"buffer_size": 3642,
+				"buffer_size": 6341,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -560,7 +560,7 @@
 			"file": "solver.py",
 			"settings":
 			{
-				"buffer_size": 6276,
+				"buffer_size": 6397,
 				"encoding": "UTF-8",
 				"line_ending": "Windows",
 				"name": "import scipy.integrate as int"
@@ -741,13 +741,13 @@
 	],
 	"file_history":
 	[
+		"/F/Projets/CG/store.h5",
 		"/F/Projets/CG/firFilter.py",
 		"/F/Projets/CG/pltHelper.py",
 		"/F/Projets/CG/filter.py",
 		"/F/Projets/CG/.gitignore",
 		"/F/Projets/CG/old/signalProcessing.py",
 		"/F/Projets/CG/signalProcessing_interp1d.py",
-		"/F/Projets/CG/store.h5",
 		"/F/Projets/CG/datastore.py",
 		"/F/Projets/CG/signalProcessing_univariatespline.py",
 		"/F/Projets/CG/signalProcessing.py",
@@ -831,6 +831,9 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"build_some_coil",
+			"solve",
+			"y0",
 			"details",
 			"order",
 			"plot_l_b",
@@ -961,10 +964,10 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2834.0,
+						"translation.y": 3307.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 6,
 					"type": "text"
 				},
 				{
@@ -980,8 +983,8 @@
 						"selection":
 						[
 							[
-								24185,
-								23429
+								23507,
+								23507
 							]
 						],
 						"settings":
@@ -1017,10 +1020,10 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 6852.0,
+						"translation.y": 8245.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
@@ -1029,15 +1032,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3642,
+						"buffer_size": 6341,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3307,
-								3307
+								5292,
+								5353
 							]
 						],
 						"settings":
@@ -1047,6 +1050,14 @@
 								{
 									"characters": ".",
 									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
 								},
 								{
 									"characters": ".",
@@ -1070,7 +1081,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1259.0,
+						"translation.y": 2293.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -1079,7 +1090,7 @@
 			]
 		},
 		{
-			"selected": 1,
+			"selected": 2,
 			"sheets":
 			[
 				{
@@ -1133,15 +1144,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 6276,
+						"buffer_size": 6397,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								5578,
-								5578
+								4222,
+								4222
 							]
 						],
 						"settings":
@@ -1155,6 +1166,10 @@
 								{
 									"characters": ".",
 									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
 								}
 							],
 							"auto_name": "import scipy.integrate as int",
@@ -1162,7 +1177,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1731.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 3,
@@ -1181,8 +1196,64 @@
 						"selection":
 						[
 							[
-								4997,
-								4997
+								5257,
+								5257
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2250.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "datastore.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4121,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3474,
+								3698
 							]
 						],
 						"settings":
@@ -1214,62 +1285,10 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2348.0,
+						"translation.y": 158.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"file": "datastore.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 4121,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1082,
-								1082
-							]
-						],
-						"settings":
-						{
-							"auto_complete_triggers":
-							[
-								{
-									"characters": ".",
-									"selector": "source.python - string - comment - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								},
-								{
-									"characters": ".",
-									"selector": "source.python - string - constant.numeric"
-								}
-							],
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 2.0,
-						"translation.y": 689.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 6,
+					"stack_index": 2,
 					"type": "text"
 				}
 			]
@@ -1277,7 +1296,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 97.0
+		"height": 24.0
 	},
 	"input":
 	{
@@ -1325,7 +1344,7 @@
 	"project": "coilgun.sublime-project",
 	"replace":
 	{
-		"height": 72.0
+		"height": 44.0
 	},
 	"save_all_on_build": true,
 	"select_file":

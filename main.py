@@ -9,8 +9,13 @@ import convexApprox
 import splinify
 from multiprocessing import Pool
 import pandas as pd
+from functools import partial
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+from scipy.interpolate import griddata
 
 
+POOL_SIZE = 4
 def discrete_fprime(f, z):
     pas = z[1] - z[0]
     f1 = numpy.roll(f, -1)
@@ -45,7 +50,7 @@ def build_some_coils(n=10):
     for index, coil in datastore.coils[datastore.coils['dLz'].isnull()][:n].iterrows():
         coils.append(coil)
     # print(coils)
-    with Pool(8) as p:
+    with Pool(POOL_SIZE) as p:
         coils = p.map(_build_a_coil, coils)
         # coil_construct(coil)
     for coil in coils:
@@ -75,26 +80,32 @@ def find_optimal_launch(loc, C, R, E, v0=0, plot=False, plot3d=False):
     return (res[0], res[1], test.computeMaxEc(res[1]), test.computeTau(res[1]))
 
 
-def build_solution(setup_id, coil_id, v0=0, chained=numpy.nan, plot=False):
+def build_solution(coil_id, setup_id, v0=0, chained=numpy.nan, plot=False):
     if not numpy.isnan(chained):
         v0 = datastore.solutions.iloc[chained].v1
     setup = datastore.setups.iloc[setup_id]
     (z0, dyn, ec, tau) = find_optimal_launch(coil_id, setup.C, setup.R, setup.E, v0=v0, plot=plot, plot3d=plot)
     solution = pd.Series([len(datastore.solutions), setup_id, coil_id, z0, v0, dyn[:, 3][-1], ec, tau, chained],
                          index=['id', 'setup', 'coil', 'z0', 'v0', 'v1', 'Ec', 'tau', 'chained'])
-    datastore.save_solution(solution)
+    return solution
 
 
 def build_some_solutions(setup_id, n=10):
-    coil_ids = datastore.coils.index.values.tolist()
-    print(datastore.solutions[datastore.solutions['setup'] == setup_id])
+    coil_ids = datastore.coils[datastore.coils['dLz'].notnull()].index.values.tolist()
+    # print(datastore.solutions[datastore.solutions['setup'] == setup_id])
     existing_sol = datastore.solutions[datastore.solutions['setup'] == setup_id]['coil']
     remaining_coils = numpy.setdiff1d(coil_ids, existing_sol)
     coil_ids = []
     for i in range(n):
-        coil_ids.append((setup_id, remaining_coils[i]))
-    with Pool(8) as p:
-        p.map(build_solution, coil_ids)
+        coil_ids.append(remaining_coils[i])
+    print(coil_ids)
+    fun = partial(build_solution, setup_id=setup_id)
+    res = []
+    with Pool(POOL_SIZE) as p:
+        res = p.map(fun, coil_ids)
+    for sol in res:
+        sol.id = len(datastore.solutions)
+        datastore.save_solution(sol)
 
 
 def plot_l_b(coil, spline, convex):
@@ -148,7 +159,7 @@ def compute_some_mu(n=10):
     for index, coil in datastore.coils[datastore.coils['mu_approx_valid'].isnull()][:n].iterrows():
         coils.append(coil)
     # print(coils)
-    with Pool(8) as p:
+    with Pool(POOL_SIZE) as p:
         coils = p.map(compute_mu_impact, coils)
         # coil_construct(coil)
     for coil in coils:
@@ -156,10 +167,36 @@ def compute_some_mu(n=10):
         # datastore.save_all()
 
 
+def plot_solutions(setup_id, phi):
+    df = datastore.solutions[datastore.solutions["setup"] == setup_id].merge(datastore.coils[datastore.coils["phi"] == 1.0], how="inner", left_on="coil", right_index=True)
+    df = df[["Lb", "Rbo", "tau"]]
+
+    x1 = numpy.linspace(df['Lb'].min(), df['Lb'].max(), len(df['Lb'].unique()))
+    y1 = numpy.linspace(df['Rbo'].min(), df['Rbo'].max(), len(df['Rbo'].unique()))
+    x2, y2 = numpy.meshgrid(x1, y1)
+    z2 = griddata((df['Lb'], df['Rbo']), numpy.array(df['tau']) * 100, (x2, y2))
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    surf = ax.plot_surface(x2, y2, z2, cmap=cm.viridis,
+                           rstride=1, cstride=1,
+                           vmin=numpy.nanmin(z2), vmax=numpy.nanmax(z2))
+
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    plt.show()
+    """ fig = plt.figure()
+    pcm = plt.pcolormesh(x2, y2, z2, cmap='RdBu_r')
+    fig.colorbar(pcm, extend='both')
+    #pcm.set_bad('grey')
+    plt.show()"""
+
+
 if __name__ == '__main__':
-    # compute_some_mu(100)
-    # build_some_coils(15)
+    compute_some_mu(10)
+    build_some_coils(10)
     build_some_solutions(0, 10)
+    plot_solutions(0, 1.0)
+
 # build_a_coil(800)
 # find_optimal_launch(800, C=0.0024, E=400, R=0.07, plot=True, plot3d=False)
 # find_optimal_launch(10, C=0.0024, E=400, R=0.07, plot=True, plot3d=True)
