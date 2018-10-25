@@ -574,4 +574,4 @@ def mu_impact(coil, full_print=False):
         Mu_impact(coil)
 
 
-mu_impact(datastore.coils.iloc[0], False)
+# mu_impact(datastore.coils.iloc[0], False)

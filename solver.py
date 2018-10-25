@@ -6,6 +6,7 @@ import pltHelper
 # from mpl_toolkits.mplot3d import Axes3D
 # from matplotlib import cm
 from mayavi import mlab
+from progbar import progbar
 
 
 class gaussSolver:
@@ -112,7 +113,7 @@ class gaussSolver:
 
         n = int(numpy.abs(bound / epsilon))
         for i in range(n):
-            print(i / n * 100)
+            progbar(i, n, 10, "Solver")
             z0.append(bound + epsilon * i)
             res.append(self.solve(bound + epsilon * i, self.v0))
         res = numpy.array(res)
@@ -161,9 +162,9 @@ class gaussSolver:
             y_scale = numpy.abs(numpy.max(z0) - numpy.min(z0))
             z_scale = numpy.abs(numpy.max(numpy.array(res[:, :, 3])[:, -1]) - numpy.min(numpy.array(res[:, :, 3])[:, -1]))
             max_scale = numpy.max([x_scale, y_scale])  # , z_scale])
-            print([x_scale, y_scale, z_scale])
-            print(max_scale)
-            print((1.0 * x_scale / max_scale, 1.0 * y_scale / max_scale, 1.0))
+            # print([x_scale, y_scale, z_scale])
+            # print(max_scale)
+            # print((1.0 * x_scale / max_scale, 1.0 * y_scale / max_scale, 1.0))
             surf.actor.actor.scale = (1, 0.1, 1)
             axes = mlab.axes(surf)
             axes.label_text_property.font_size = 10

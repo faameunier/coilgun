@@ -8,7 +8,7 @@
 				"MPLCONFIGDIR": "."
 			},
 			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
-			"name": "Anaconda Python Builder",
+			"name": "python",
 			"selector": "source.python",
 			"shell_cmd": "F:\\Projets\\CG\\venv\\Scripts\\python -u \"$file\""
 		}

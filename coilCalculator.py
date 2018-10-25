@@ -8,8 +8,11 @@ class coilCalculator:
     __nyq_secu = 1.01
     __space_factor = 5
 
-    def __init__(self, bHide=False, meshsize=1, _i0=100):
-        self._seed = str(numpy.random.randint(10000))
+    def __init__(self, bHide=False, meshsize=1, _i0=100, _id=None):
+        if _id is not None:
+            self._seed = str(_id)
+        else:
+            self._seed = str(numpy.random.randint(10000))
         self.meshsize = meshsize
         self.Lb = None
         self.Rbi = None
@@ -175,7 +178,7 @@ class coilCalculator:
         femm.mi_selectgroup(1)
         femm.mi_movetranslate2(0, pos[0], 4)
         for i in range(ite // 2):
-            progbar(i, ite // 2 - 1, 10)
+            progbar(i, ite // 2 - 1, 10, "Coil " + self._seed + " dLz")
             femm.mi_analyze()
             femm.mi_loadsolution()
             femm.mo_groupselectblock(1)
@@ -232,6 +235,7 @@ class coilCalculator:
         _mu = self.mu
         res = []
         test_res = []
+        print("Coil " + self._seed + " mus")
         for mu in mus:
             self.mu = mu
             self.deleteProjectile()
@@ -254,7 +258,7 @@ class coilCalculator:
         errors = []
         for i in range(0, len(test_res)):
             errors.append(numpy.abs((res[i] / res[0]) / (test_res[i] / test_res[0]) - 1))
-            print(numpy.abs(res[i] / res[0]) * 100, numpy.abs(test_res[i] / test_res[0]) * 100)
+            # print(numpy.abs(res[i] / res[0]) * 100, numpy.abs(test_res[i] / test_res[0]) * 100)
             if errors[-1] > error:
                 success = False
                 # break

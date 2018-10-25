@@ -15,7 +15,9 @@ from matplotlib import cm
 from scipy.interpolate import griddata
 
 
-POOL_SIZE = 4
+POOL_SIZE = 6
+
+
 def discrete_fprime(f, z):
     pas = z[1] - z[0]
     f1 = numpy.roll(f, -1)
@@ -30,7 +32,7 @@ def coil_construct(coil):
     Rbi = coil["Rbi"]
     Rbo = coil["Rbo"]
     mu = coil["mu"]
-    test = coilCalculator.coilCalculator(True)
+    test = coilCalculator.coilCalculator(True, _id=coil.name)
     test.defineCoil(Lb, Rbi, Rbo)
     test.drawCoil()
     test.defineProjectile(Lp, Rp, mu=mu)
@@ -59,7 +61,7 @@ def build_some_coils(n=10):
 
 
 def _build_a_coil(coil):
-    print(coil.name)
+    print("Coil", coil.name)
     coil_construct(coil)
     return coil
 
@@ -76,7 +78,7 @@ def find_optimal_launch(loc, C, R, E, v0=0, plot=False, plot3d=False):
     # print(res)
     if plot:
         test.plot_single(res[1])
-    print(test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
+    print("Coil " + str(coil.name) + " opt launch", test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
     return (res[0], res[1], test.computeMaxEc(res[1]), test.computeTau(res[1]))
 
 
@@ -98,7 +100,7 @@ def build_some_solutions(setup_id, n=10):
     coil_ids = []
     for i in range(n):
         coil_ids.append(remaining_coils[i])
-    print(coil_ids)
+    # print(coil_ids)
     fun = partial(build_solution, setup_id=setup_id)
     res = []
     with Pool(POOL_SIZE) as p:
@@ -133,7 +135,7 @@ def plot_l_b(coil, spline, convex):
 
 
 def compute_mu_impact(coil, full_print=False):
-    print(coil.name)
+    print("Mu", coil.name)
     Lp = coil["Lp"]
     Rp = coil["Rp"]
     Lb = coil["Lb"]
@@ -193,9 +195,13 @@ def plot_solutions(setup_id, phi):
 
 if __name__ == '__main__':
     compute_some_mu(10)
-    build_some_coils(10)
+    # build_some_coils(10)
     build_some_solutions(0, 10)
     plot_solutions(0, 1.0)
+    # datastore.update_coil(_build_a_coil(datastore.coils.iloc[480]))
+    # sol = build_solution(480, 0)
+    # sol.id = len(datastore.solutions)
+    # datastore.save_solution(sol)
 
 # build_a_coil(800)
 # find_optimal_launch(800, C=0.0024, E=400, R=0.07, plot=True, plot3d=False)
