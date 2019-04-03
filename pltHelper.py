@@ -4,6 +4,8 @@ import matplotlib as mpl
 plt.style.available
 plt.style.use("switch")
 
+# Some helper function for matplotlib
+
 
 class CenteredFormatter(mpl.ticker.ScalarFormatter):
     """Acts exactly like the default Scalar Formatter, but yields an empty
@@ -18,6 +20,7 @@ class CenteredFormatter(mpl.ticker.ScalarFormatter):
 
 
 def centerPlt(ax=None):
+    """Center the axis on the graph"""
     if ax is None:
         ax = plt.gca()
     ax.spines['bottom'].set_position('zero')

@@ -12,6 +12,7 @@ import pandas as pd
 from functools import partial
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
+from tqdm import tqdm
 from scipy.interpolate import griddata
 
 
@@ -19,6 +20,20 @@ POOL_SIZE = 6
 
 
 def discrete_fprime(f, z):
+    """Discrete derivative
+
+    Discrete derivative of f
+    measured at points z.
+
+    Suppose a regular sampling.
+
+    Arguments:
+        f {np.array} -- points to derivate
+        z {np.array} -- points of measurement
+
+    Returns:
+        np.array - the discrete derivative
+    """
     pas = z[1] - z[0]
     f1 = numpy.roll(f, -1)
     f0 = numpy.roll(f, 1)
@@ -26,6 +41,19 @@ def discrete_fprime(f, z):
 
 
 def coil_construct(coil):
+    """Compute a coil inductance
+
+    Given a coil, compute all key
+    metrics to perform a simulation:
+    - Bare inductance
+    - Variation of inductance when projectile moves along the revolution axis
+    - Resistance (round wire by default)
+
+    Updates the series and doesn't return anything.
+
+    Arguments:
+        coil {pd.Series} -- Mechanical setup
+    """
     Lp = coil["Lp"]
     Rp = coil["Rp"]
     Lb = coil["Lb"]
@@ -48,25 +76,61 @@ def coil_construct(coil):
 
 
 def build_some_coils(n=10):
+    """Compute a batch of coils
+
+    Select n coils in the store that are not computed
+    and compute their metrics using multiprocessing.
+
+    Keyword Arguments:
+        n {number} -- batch size (default: {10})
+    """
     coils = []
     for index, coil in datastore.coils[datastore.coils['dLz'].isnull()][:n].iterrows():
         coils.append(coil)
-    # print(coils)
     with Pool(POOL_SIZE) as p:
-        coils = p.map(_build_a_coil, coils)
-        # coil_construct(coil)
+        coils = []
+        for res in tqdm(p.imap(_build_a_coil, coils), total=len(coils)):
+            coils.append(res)
     for coil in coils:
         datastore.update_coil(coil)
-        # datastore.save_all()
 
 
 def _build_a_coil(coil):
+    """ helper for multiprocessing """
     print("Coil", coil.name)
     coil_construct(coil)
     return coil
 
 
 def find_optimal_launch(loc, C, R, E, v0=0, plot=False, plot3d=False):
+    """Compute the optimal launch position
+
+    Given a coil number and an electrical setup,
+    computes the optimal launch position of the projectile
+    and the key statistics linked (kinetic energy and efficiency).
+
+    Use plot to:
+    - plot the coil parameters
+    - plot the projection of all launch positions tested
+    - plot the dynamic of the best solution
+
+    Use plot3d to:
+    - plot the 3d representation of all solutions tested
+
+    Arguments:
+        loc {number} -- coil id
+        C {number} -- capacity in Farad
+        R {number} -- circuit resistance without coil in Ohm
+        E {number} -- capacitor tension in Volts
+
+    Keyword Arguments:
+        v0 {number} -- starting speed for chained coils (default: {0})
+        plot {bool} -- plot 2d informations (default: {False})
+        plot3d {bool} -- plot 3d solutions (default: {False})
+
+    Returns:
+        tuple - starting position, system's dynamic, output kinetic energy, power efficiency
+    """
     coil = datastore.coils.iloc[loc]
     m = numpy.pi * coil.Rp**2 * coil.Lp * 7860 * 10 ** (-9)
     convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
@@ -75,7 +139,6 @@ def find_optimal_launch(loc, C, R, E, v0=0, plot=False, plot3d=False):
         plot_l_b(coil, lz, convex)
     test = solver.gaussSolver(lz, C=C, R=R + coil.resistance, E=E, m=m, v0=v0)
     res = test.computeOptimal(-(5 * coil.Lb) / 2000, plot=plot, plot3d=plot)
-    # print(res)
     if plot:
         test.plot_single(res[1])
     print("Coil " + str(coil.name) + " opt launch", test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
@@ -83,6 +146,23 @@ def find_optimal_launch(loc, C, R, E, v0=0, plot=False, plot3d=False):
 
 
 def build_solution(coil_id, setup_id, v0=0, chained=numpy.nan, plot=False):
+    """Build a solution
+
+    Given a coil id and an electrical setup id,
+    finds the optimal launch position and associated key metrics.
+
+    Arguments:
+        coil_id {number} -- coil number in store
+        setup_id {number} -- electrical setup in store
+
+    Keyword Arguments:
+        v0 {number} -- initial speed (default: {0})
+        chained {number} -- last solution id, if the coils are chained. v0 will be the output speed of the last coil (default: {numpy.nan})
+        plot {bool} -- plot informations (default: {False})
+
+    Returns:
+        pd.Series -- Solution
+    """
     if not numpy.isnan(chained):
         v0 = datastore.solutions.iloc[chained].v1
     setup = datastore.setups.iloc[setup_id]
@@ -93,29 +173,38 @@ def build_solution(coil_id, setup_id, v0=0, chained=numpy.nan, plot=False):
 
 
 def build_some_solutions(setup_id, n=10):
+    """Compute a batch of solutions
+
+    Given a setup id, selects n unsolved coils
+    settings.
+
+    Uses multiprocessing.
+
+    Arguments:
+        setup_id {number} -- setup id in store
+
+    Keyword Arguments:
+        n {number} -- batch size (default: {10})
+    """
     coil_ids = datastore.coils[datastore.coils['dLz'].notnull()].index.values.tolist()
-    # print(datastore.solutions[datastore.solutions['setup'] == setup_id])
     existing_sol = datastore.solutions[datastore.solutions['setup'] == setup_id]['coil']
     remaining_coils = numpy.setdiff1d(coil_ids, existing_sol)
     coil_ids = []
     for i in range(n):
         coil_ids.append(remaining_coils[i])
-    # print(coil_ids)
     fun = partial(build_solution, setup_id=setup_id)
     res = []
     with Pool(POOL_SIZE) as p:
-        res = p.map(fun, coil_ids)
+        res = []
+        for sol in tqdm(p.imap(fun, coil_ids), total=len(coil_ids)):
+            res.append(sol)
     for sol in res:
         sol.id = len(datastore.solutions)
         datastore.save_solution(sol)
 
 
 def plot_l_b(coil, spline, convex):
-    print(coil.dLz_z, coil.dLz)
-    # plt.plot(convex._d2Lz)
-    # plt.plot(convex.run_approx())
-    # plt.show()
-
+    """ a helper to plot a coil inductance """
     z = numpy.linspace(2 * spline.z[0], 2 * spline.z[-1], 10000)
 
     ax1 = plt.subplot(311)
@@ -134,7 +223,15 @@ def plot_l_b(coil, spline, convex):
     plt.show()
 
 
-def compute_mu_impact(coil, full_print=False):
+def compute_mu_impact(coil):
+    """Check if the Mu approximation is valid
+
+    Arguments:
+        coil {pd.Series} -- coil
+
+    Returns:
+        pd.Series -- updated coil
+    """
     print("Mu", coil.name)
     Lp = coil["Lp"]
     Rp = coil["Rp"]
@@ -157,19 +254,26 @@ def compute_mu_impact(coil, full_print=False):
 
 
 def compute_some_mu(n=10):
+    """Check the mu approximation by batch
+
+    Using multiprocessing.
+
+    Keyword Arguments:
+        n {number} -- Batch size (default: {10})
+    """
     coils = []
     for index, coil in datastore.coils[datastore.coils['mu_approx_valid'].isnull()][:n].iterrows():
         coils.append(coil)
-    # print(coils)
     with Pool(POOL_SIZE) as p:
-        coils = p.map(compute_mu_impact, coils)
-        # coil_construct(coil)
+        coils = []
+        for res in tqdm(p.imap(compute_mu_impact, coils), total=len(coils)):
+            coils.append(res)
     for coil in coils:
         datastore.update_coil(coil)
-        # datastore.save_all()
 
 
 def plot_solutions(setup_id, phi):
+    """ plot a solution in 3d, phi should be the wire size """
     df = datastore.solutions[datastore.solutions["setup"] == setup_id].merge(datastore.coils[datastore.coils["phi"] == 1.0], how="inner", left_on="coil", right_index=True)
     df = df[["Lb", "Rbo", "tau"]]
 
@@ -186,23 +290,14 @@ def plot_solutions(setup_id, phi):
 
     fig.colorbar(surf, shrink=0.5, aspect=5)
     plt.show()
-    """ fig = plt.figure()
-    pcm = plt.pcolormesh(x2, y2, z2, cmap='RdBu_r')
-    fig.colorbar(pcm, extend='both')
-    #pcm.set_bad('grey')
-    plt.show()"""
 
 
 if __name__ == '__main__':
-    compute_some_mu(10)
+    # compute_some_mu(10)
     # build_some_coils(10)
-    build_some_solutions(0, 10)
-    plot_solutions(0, 1.0)
+    # build_some_solutions(2, 400)
+    plot_solutions(2, 1.0)
     # datastore.update_coil(_build_a_coil(datastore.coils.iloc[480]))
     # sol = build_solution(480, 0)
     # sol.id = len(datastore.solutions)
     # datastore.save_solution(sol)
-
-# build_a_coil(800)
-# find_optimal_launch(800, C=0.0024, E=400, R=0.07, plot=True, plot3d=False)
-# find_optimal_launch(10, C=0.0024, E=400, R=0.07, plot=True, plot3d=True)

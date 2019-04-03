@@ -5,6 +5,9 @@ from scipy.signal import convolve
 # from signalProcessing import lFilter
 
 
+# This module is not documented and there are some small errors in it, however the code still works well.
+# For an explanation of it, please review the CVXFilter repository.
+
 class Convex_approx_1:
     def __init__(self, data_points, concave=False, c0=None, details=False):
         if concave:

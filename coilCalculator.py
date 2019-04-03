@@ -1,14 +1,27 @@
 import femm
 import numpy
-from progbar import progbar
+from tqdm import tqdm
 import os
 
 
 class coilCalculator:
+    """ The aim of this class to compute, using finite element methods, some key data around a given coilgun problem """
     __nyq_secu = 1.01
     __space_factor = 5
 
     def __init__(self, bHide=False, meshsize=1, _i0=100, _id=None):
+        """Initialize a FEMM solver
+
+        Open FEMM and define the key elements of the magnetic problem.
+        The problem is considered STATIC.
+        All measurements are in MILLIMETERS here !
+
+        Keyword Arguments:
+            bHide {bool} -- Either to show or hide the window. Hiding it provides a nice speed improvement (default: {False})
+            meshsize {number} -- Size of the mesh used for the finite elements. The smaller the more precise, but it comes with a computational cost (default: {1})
+            _i0 {number} -- Current used in computation. Any value should do, we use 100 to avoid working with very small floats (default: {100})
+            _id {number} -- Some id used to save the problem, if one requires to track and come back to the FEMM model (default: {None})
+        """
         if _id is not None:
             self._seed = str(_id)
         else:
@@ -37,8 +50,26 @@ class coilCalculator:
         femm.mi_addmaterial("Air", 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
 
     def defineCoil(self, Lb, Rbi, Rbo, phi=1, rho=17 * 10**(-9), wire_type="round"):
+        """Define the coil
+
+        Define the coil in FEMM.
+        All measurements are in millimeters.
+
+        Arguments:
+            Lb {number} -- Length of the coil
+            Rbi {number} -- Inside radius of the coil
+            Rbo {number} -- Outside radius of the coil
+
+        Keyword Arguments:
+            phi {number} -- diameter of the wire (default: {1})
+            rho {number} -- resistivity of the wire, defaults to copper (default: {17 * 10**(-9)})
+            wire_type {str} -- type of wire, can either be round or square (this has some impact on the model, so be sure to select wisely) (default: {"round"})
+
+        Raises:
+            ValueError -- Something went wrong, please check the error for more details
+        """
         if wire_type not in ["round", "square"]:
-            raise BaseException("Wire should be round or square.")
+            raise ValueError("Wire should be round or square.")
         else:
             self.wire_type = wire_type
         if self.espace is None:
@@ -53,19 +84,30 @@ class coilCalculator:
                     self.resistance = 4 * rho * ((Rbo * 10**-3)**2 - (Rbi * 10**-3)**2) * (Lb * 10**-3) / (phi * 10**-3)**4
                     self.deleteCoil()
                 else:
-                    raise BaseException("Impossible coil/projectile geometry.")
+                    raise ValueError("Impossible coil/projectile geometry.")
             else:
-                raise BaseException("Impossible coil geometry.")
+                raise ValueError("Impossible coil geometry.")
         else:
-            raise BaseException("Space already defined.")
+            raise ValueError("Space already defined.")
 
     def deleteCoil(self):
+        """Delete the coil
+
+        Provided for debugging, should not be used.
+        """
         femm.mi_clearselected()
         femm.mi_selectgroup(2)
         femm.mi_deleteselected()
         femm.mi_deletematerial("Cuivre")
 
     def drawCoil(self):
+        """Draw the coil
+
+        Draws the coil in the FEMM instance
+
+        Raises:
+            Exception -- The coil is not defined, please call defineCoil before.
+        """
         if self.Lb is not None:
             femm.mi_clearselected()
             femm.mi_addmaterial("Cuivre", 1, 1, 0, 0, 1 / self.rho * 10**-6, 0, 0, 1, 3 if self.wire_type == "round" else 6, 0, 0, 1, self.phi)
@@ -91,9 +133,25 @@ class coilCalculator:
             femm.mi_setblockprop("Cuivre", 0, self.meshsize, "Bobine", 0, 2, self.n)
             femm.mi_clearselected()
         else:
-            raise BaseException("No coil defined.")
+            raise Exception("No coil defined.")
 
     def defineProjectile(self, Lp, Rp, m_vol_fer=7800, mu=100):
+        """Define projectile properties
+
+        Define the projectile properties.
+        All measurement in millimeters.
+
+        Arguments:
+            Lp {number} -- Length of the projectile
+            Rp {number} -- Radius of the projectile
+
+        Keyword Arguments:
+            m_vol_fer {number} -- true density of the projectile (default: {7800})
+            mu {number} -- magnetic susceptibility of the material. This should be set with excessive care. The model properties are not linear when it comes to mu. There's still work in progress here. (default: {100})
+
+        Raises:
+            ValueError -- Something went wrong, check the error.
+        """
         if self.espace is None:
             if Lp > 0 and Rp > 0 and m_vol_fer >= 0 and mu >= 1:
                 if self.Rbi is None or self.Rbi >= Rp:
@@ -104,13 +162,17 @@ class coilCalculator:
                     self.mass = numpy.pi * Rp ** 2 * Lp * m_vol_fer * 10 ** (-9)
                     self.deleteProjectile()
                 else:
-                    raise BaseException("Impossible coil/projectile geometry.")
+                    raise ValueError("Impossible coil/projectile geometry.")
             else:
-                raise BaseException("Impossible coil geometry.")
+                raise ValueError("Impossible coil geometry.")
         else:
-            raise BaseException("Space already defined.")
+            raise ValueError("Space already defined.")
 
     def deleteProjectile(self):
+        """Delete the projectile
+
+        Deletes the projectile (drawn) but doesn't erase its properties.
+        """
         femm.mi_clearselected()
         femm.mi_selectgroup(1)
         femm.mi_deleteselected()
@@ -119,6 +181,13 @@ class coilCalculator:
             femm.mi_addsegment(0, -self.espace, 0, self.espace)
 
     def drawProjectile(self):
+        """Draw projectile
+
+        Draws the projectil in the FEMM instance
+
+        Raises:
+            Exception -- Projectile is not defined
+        """
         if self.Lp is not None:
             femm.mi_addmaterial("Projectile", self.mu, self.mu, 0, 0, 0, 0, 0, 1, 0, 0, 0)
             femm.mi_clearselected()
@@ -144,9 +213,16 @@ class coilCalculator:
             femm.mi_setblockprop("Projectile", 0, self.meshsize, "<None>", 0, 1, 0)
             femm.mi_clearselected()
         else:
-            raise BaseException("No projectile defined.")
+            raise Exception("No projectile defined.")
 
     def setSpace(self):
+        """Define space
+
+        Define the whole space used in FEMM
+
+        Raises:
+            Exception -- Coil and projectile must be defined first to compute a safe space size.
+        """
         if self.Lp is not None and self.Lb is not None:
             femm.mi_clearselected()
             self.espace = self.__space_factor * max(self.Lb, self.Rbo, self.Lp)
@@ -156,9 +232,13 @@ class coilCalculator:
             femm.mi_makeABC(7, self.espace, 0, 0, 0)
             femm.mi_zoomnatural()
         else:
-            raise BaseException("Define coil and projectile first.")
+            raise Exception("Define coil and projectile first.")
 
     def computeL0(self):
+        """Compute L0
+
+        Compute the bare inductance of the coil without projectile.
+        """
         self.deleteProjectile()
         femm.mi_refreshview()
         femm.mi_analyze()
@@ -170,15 +250,32 @@ class coilCalculator:
         self.drawProjectile()
 
     def computedLz(self, ite=0, rType="linear"):
-        # print(self._i0)
+        """Compute dLz
+
+        Compute the variation of inductance while the
+        projectile moves on the axis. If ite is zero,
+        some guess is made about the number of iterations required
+        for decent approximation.
+        By default the projectile is moved linearly, but it
+        is possible to set the movement type to tchebychev in order
+        to minimize the Runge phenomenom. However not all the code
+        is compatible with it.
+
+        Rather than computing the variation of inductance, we compute
+        the force on the projectile and correct it (explanations are available
+        somewhere on this git :) ).
+
+        Keyword Arguments:
+            ite {number} -- number of steps (default: {0})
+            rType {str} -- type of movement, linear or tchebychev (default: {"linear"})
+        """
         self.deleteProjectile()
         self.drawProjectile()
         (pas, pos, ite) = self._compute_range(ite, rType)
         force = numpy.zeros(ite)
         femm.mi_selectgroup(1)
         femm.mi_movetranslate2(0, pos[0], 4)
-        for i in range(ite // 2):
-            progbar(i, ite // 2 - 1, 10, "Coil " + self._seed + " dLz")
+        for i in tqdm(range(ite // 2)):
             femm.mi_analyze()
             femm.mi_loadsolution()
             femm.mo_groupselectblock(1)
@@ -187,11 +284,31 @@ class coilCalculator:
             femm.mi_selectgroup(1)
             femm.mi_movetranslate2(0, pas[i], 4)
         self.dLz = 2 * force / self._i0**2
-        # print("dLz", self.dLz)
         self.dLz_z = pos * 10**-3
         self.dLz_nyquist = 1 / (2 * numpy.mean(pas) * 10**-3)
 
     def _compute_range(self, ite=0, rType="linear"):
+        """Compute the projectile range of movement
+
+        The projectile starting point is 2/3 of the space size.
+        The final position is in the middle of the coil.
+
+        linear computes a linear scale of movements.
+        tchebychev computes an optimized path to minimize
+        Runge's effect by computing the Tchebychev nodes.
+
+        If ite is not specified, it is guessed based on several informations.
+        First we use estFreq which is a guess of "how fast" the inductance can change (empirical).
+        Then we chose a number of steps that is compatible with Shannon theorem's and again some
+        additionnal margin.
+
+        Keyword Arguments:
+            ite {number} -- Number of iteration, if 0, it is guessed (default: {0})
+            rType {str} -- linear or tchebychev (default: {"linear"})
+
+        Raises:
+            ValueError -- wrong rType
+        """
         x_max = 2 / 3 * self.espace
         if ite != 0 and ite % 2 == 0:
             ite += 1
@@ -202,11 +319,6 @@ class coilCalculator:
                     ite += 1
             pos = numpy.array([x_max * (-1 + 2 * i / (ite - 1)) for i in range(ite)])
             pas = numpy.ones(ite) * 2 * x_max / (ite - 1)
-            # print("pos", pos)
-            # print("pas", pas)
-            # print("n", ite)
-            # print("mean pas", numpy.mean(pas))
-            # print("1/f", 1 / self.estFreq() * 10**3)
             return (pas, pos, ite)
         if rType == "tchebychev":
             if ite == 0:
@@ -222,16 +334,28 @@ class coilCalculator:
             pos[ite // 2] = 0
             pas[ite // 2 - 1] = -pos[ite // 2 - 1]
             pas[ite // 2] = pos[ite // 2 + 1]
-            # print("pos", pos)
-            # print("pas", pas)
-            # print("n", ite)
-            # print("mean pas", numpy.mean(pas))
-            # print("1/f", 1 / self.estFreq() * 10**3)
             return (pas, pos, ite)
         else:
-            raise BaseException("Unknown node computation type.")
+            raise ValueError("Unknown node computation type.")
 
     def computeMuImpact(self, mus=[5, 10, 50, 100, 500, 1000, 5000], error=0.1):
+        """Compute the impact of Mu
+
+        The model is NOT LINEAR in mu. It is hard to guess what would be the effect
+        of an increased suceptibility and it may highly modify the response of the coil.
+        However, for some configuration the error is low (typically a long coil and a small projectile).
+
+        This function provides some help to know if we can consider the model linear in Mu.
+        Simply provide a range of possible susceptibilities for your projectile, and an
+        acceptable relative error.
+
+        We do not check the whole linearity, but simply in two points selected empirically.
+        Therefore some care should be taken regarding the output of this helper method.
+
+        Keyword Arguments:
+            mus {list} -- [description] (default: {[5, 10, 50, 100, 500, 1000, 5000]})
+            error {number} -- [description] (default: {0.1})
+        """
         _mu = self.mu
         res = []
         test_res = []
@@ -258,7 +382,6 @@ class coilCalculator:
         errors = []
         for i in range(0, len(test_res)):
             errors.append(numpy.abs((res[i] / res[0]) / (test_res[i] / test_res[0]) - 1))
-            # print(numpy.abs(res[i] / res[0]) * 100, numpy.abs(test_res[i] / test_res[0]) * 100)
             if errors[-1] > error:
                 success = False
                 # break
@@ -276,9 +399,17 @@ class coilCalculator:
                     'errors': errors}
 
     def estFreq(self):
+        """Estimated frequency of variation dLz
+
+        Based on some simple assumptions regarding the problem
+        definition. This is very empirical and far from perfect for weird configurations.
+
+        Returns:
+            number -- estimated frequency
+        """
         return 4 / (min(self.Lb, self.Lp) * 10**-3)
 
     def __del__(self):
-        # femm.closefemm()
+        """  clean temporary files on exit """
         os.remove("temp/temp" + self._seed + ".fem")
         os.remove("temp/temp" + self._seed + ".ans")

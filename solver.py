@@ -6,7 +6,7 @@ import pltHelper
 # from mpl_toolkits.mplot3d import Axes3D
 # from matplotlib import cm
 from mayavi import mlab
-from progbar import progbar
+from tqdm import tqdm
 
 
 class gaussSolver:
@@ -86,34 +86,13 @@ class gaussSolver:
     def computeTau(self, result):
         return self.computeMaxEc(result) / self.computeMaxE(result)
 
-    # def _dicho_opt(self, bound, ite=50):
-    #     temp_tau = 0
-    #     i = 1
-    #     res = (self.solve(bound, 0), self.solve(0, 0))
-    #     z0 = (bound, 0)
-    #     while i < ite:
-    #         temp_tau = (self.computeTau(res[0]), self.computeTau(res[1]))
-    #         print(z0, temp_tau)
-    #         if temp_tau[0] > temp_tau[1]:
-    #             z0 = (z0[0], numpy.mean(z0))
-    #             res = (res[0], self.solve(z0[1], 0))
-    #         else:
-    #             z0 = (numpy.mean(z0), z0[1])
-    #             res = (self.solve(z0[0], 0), res[1])
-    #         i += 1
-    #     if temp_tau[0] > temp_tau[1]:
-    #         return (z0[0], res[0])
-    #     else:
-    #         return (z0[1], res[1])
-
     def _linear_opt(self, bound, epsilon=0.0005, plot=False, plot3d=False):
         res = []
         z0 = []
         i = 0
 
         n = int(numpy.abs(bound / epsilon))
-        for i in range(n):
-            progbar(i, n, 10, "Solver")
+        for i in tqdm(range(n)):
             z0.append(bound + epsilon * i)
             res.append(self.solve(bound + epsilon * i, self.v0))
         res = numpy.array(res)

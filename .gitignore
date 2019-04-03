@@ -1,3 +1,8 @@
 venv/
 temp/*.*
 old/*.h5
+*.h5
+__pycache__/
+*.sublime*
+old/
+tex.cache/

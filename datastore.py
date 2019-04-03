@@ -7,6 +7,17 @@ from shutil import copyfile
 
 
 def populate_coils(coils):
+    """Populate the dataframe with values to study
+
+    Set all coils geometry that need to be studied.
+    Here values are fixed for my particular research.
+
+    Arguments:
+        coils {DataFrame} -- Empty coil dataframe
+
+    Returns:
+        DataFrame -- populated df
+    """
     lp = 20
     rp = 4
     lb = numpy.linspace(20, 100, 81)
@@ -24,6 +35,20 @@ def populate_coils(coils):
 
 
 def populate_setups(setups):
+    """Populatte setups
+
+    Set all electrical setups
+    that will be tested.
+
+    Here again these are the ones
+    I wanted to explore.
+
+    Arguments:
+        setups {DataFrame} -- Empty setups dataframe
+
+    Returns:
+        DataFrame -- populated df
+    """
     E = 400
     C = 0.0024
     R = 0.07
@@ -40,31 +65,37 @@ def populate_setups(setups):
 
 
 def save_all():
+    """Save all stores"""
     store.put('coils', coils)
     store.put('setups', setups)
     store.put('solutions', solutions)
 
 
 def update_coil(coil):
+    """update a given coil"""
     coils.loc[coil.name] = coil
 
 
 def save_setup(setup):
+    """save setupd df"""
     global setups
     setups = setups.append(setup, ignore_index=True)
 
 
 def save_solution(solution):
+    """save solution df"""
     global solutions
     solutions = solutions.append(solution, ignore_index=True)
 
 
 def backup():
+    """create a backup of the database in case of problem"""
     copyfile('store.h5', 'store_backup.h5')
 
 # ==== MAIN
 
 
+# read HDFstore
 store = pd.HDFStore('store.h5')
 
 
@@ -179,6 +210,7 @@ if '/solutions' not in store.keys():
 solutions = store['solutions']
 
 # ==== EXIT
+# Make sure everything is saved and properly closed. We do not want any errors here.
 atexit.register(backup)
 atexit.register(store.close)
 atexit.register(save_all)

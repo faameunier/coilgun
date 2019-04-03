@@ -10,8 +10,14 @@ import datastore
 import solver
 # import firFilter
 
+# as the name implies, this is a sandbow with a lot of functions to test the model and debug it.
+# most function in main come from here at some point.
+# I do not clean this file voluntarily are some stuff here might be reused.
+# I also believe it shows how to use the different scripts
+
 
 def discrete_fprime(f, z):
+    """ discrete derivative """
     pas = z[1] - z[0]
     f1 = numpy.roll(f, -1)
     f0 = numpy.roll(f, 1)
@@ -161,7 +167,18 @@ example_1 = (numpy.array([-0.1, -0.0990099, -0.0980198, -0.0970297, -0.0960396,
 
 
 def Mu_impact(cas):
-    # Mu impact
+    """Shows the impact of Mu
+
+    Given a project setup, computes the inductance
+    and its 2 derivatives for several Mu values and
+    plots them nicely.
+
+    The output is not raw but the splinified convex
+    approx.
+
+    Arguments:
+        cas {dict} -- a setup
+    """
     Lp = cas["Lp"]
     Rp = cas["Rp"]
     Lb = cas["Lb"]
@@ -171,7 +188,7 @@ def Mu_impact(cas):
     n = len(mu)
     res = []
     for k in range(n):
-        test = coilCalculator(True, 10)
+        test = coilCalculator(True, 5)
         test.defineCoil(Lb, Rbi, Rbo)
         test.drawCoil()
         test.defineProjectile(Lp, Rp, mu=mu[k])
@@ -187,42 +204,41 @@ def Mu_impact(cas):
         ax1 = plt.subplot(321)
         plt.plot(z, lz.Lz()(z), color=(k / n, 0, 1 - k / n), label=k)
         plt.setp(ax1.get_xticklabels(), visible=False)
-        # plt.setp(ax1.get_yticklabels())
 
         ax1 = plt.subplot(322, sharex=ax1)
         plt.plot(z, (lz.Lz()(z) - test.L0) / res[-1] + test.L0, color=(k / n, 0, 1 - k / n), label=k)
         plt.setp(ax1.get_xticklabels(), visible=False)
-        # plt.setp(ax1.get_yticklabels(), visible=False)
 
         ax2 = plt.subplot(323, sharex=ax1)
-        # plt.plot(test.dLz_z, test.dLz, color=(0, k / n, 1 - k / n))
         plt.plot(z, lz.dLz()(z), color=(k / n, 0, 1 - k / n), label=k)
         plt.setp(ax2.get_xticklabels(), visible=False)
-        # plt.setp(ax2.get_yticklabels(), visible=False)
 
         ax2 = plt.subplot(324, sharex=ax1)
         plt.plot(z, lz.dLz()(z) / res[-1], color=(k / n, 0, 1 - k / n), label=k)
         plt.setp(ax2.get_xticklabels(), visible=False)
-        # plt.setp(ax2.get_yticklabels(), visible=False)
 
         plt.subplot(325, sharex=ax1)
-        # plt.plot(test.dLz_z, convex.run_approx(), color=(1 - k / n, k / n, 0))
-        # plt.plot(test.dLz_z, discrete_fprime(test.dLz, test.dLz_z), color=(0, k / n, 1 - k / n))
         plt.plot(z, lz.d2Lz()(z), color=(k / n, 0, 1 - k / n), label=k)
 
         plt.subplot(326, sharex=ax1)
-        # plt.plot(test.dLz_z, convex.run_approx(), color=(1 - k / n, k / n, 0))
-        # plt.plot(test.dLz_z, discrete_fprime(test.dLz, test.dLz_z), color=(0, k / n, 1 - k / n))
         plt.plot(z, lz.d2Lz()(z) / res[-1], color=(k / n, 0, 1 - k / n), label=k)
         plt.setp(ax1.get_xticklabels(), visible=False)
-        # plt.setp(ax3.get_yticklabels(), visible=False)
-
     plt.show()
-    # print(mu, res)
 
 
 def I_impact(cas, mu=200):
-    # I impact
+    """Show the impact of current
+
+    Show the impact of static current.
+    Protip: it is none (which validates the theory of computing
+    inductance via the force).
+
+    Arguments:
+        cas {dict} -- problem definition
+
+    Keyword Arguments:
+        mu {number} -- susceptibility (default: {200})
+    """
     Lp = cas["Lp"]
     Rp = cas["Rp"]
     Lb = cas["Lb"]
@@ -242,127 +258,11 @@ def I_impact(cas, mu=200):
         test.computedLz(ite=10)  # dLz is computed via the weigthed force tensor which should be equal to F=1/2*i**2*dLz/dz
         res.append((test.L0, numpy.max(test.dLz)))
         plt.plot(test.dLz_z, test.dLz, color=(k / n, 0, 1 - k / n), label=k)
-    print(res)
     plt.show()
 
 
-def test_case(cas):
-    # Mu impact
-    Lp = cas["Lp"]
-    Rp = cas["Rp"]
-    Lb = cas["Lb"]
-    Rbi = cas["Rbi"]
-    Rbo = cas["Rbo"]
-    mu = 100
-    test = coilCalculator(True, 3)
-    test.defineCoil(Lb, Rbi, Rbo)
-    test.drawCoil()
-    test.defineProjectile(Lp, Rp, mu=mu)
-    test.drawProjectile()
-    test.setSpace()
-    test.computeL0()
-    test.computedLz()
-    res = (test.dLz_z, test.dLz)
-    # plt.plot(res[0], res[1] / max(test.dLz))
-    # plt.show()
-    return res
-
-
-"""
-N = len(test.dLz_z)
-w = blackman(N)
-ywf = fft(test.dLz * w)
-xf = numpy.linspace(0, 1 / (2 * (test.dLz_z[1] - test.dLz_z[0])), N / 2)
-
-plt.semilogy(xf[1:N // 2], 2.0 / N * numpy.abs(ywf[1:N // 2]), '-r')
-plt.grid()
-
-"""
-
-"""
-plt.subplot(1, 2, 1)
-
-c = lFilter(test.dLz_z, test.dLz, test.dLz_nyquist)
-
-# test.computedLz(500, rType="linear")
-# a = lFilter(test.dLz_z, test.dLz, test.dLz_nyquist, test.estFreq())
-z2 = numpy.linspace(test.dLz_z[0], test.dLz_z[-1], 5000)
-plt.plot(test.dLz_z, test.dLz, label="raw 300")
-plt.plot(z2, c.dLz()(z2), label="xp auto")
-# plt.plot((a.z - a.delay)[a.n_pad:], a.raw_dLz()[a.n_pad:])
-# plt.xlabel(r'$z \; (m)$')
-# plt.ylabel(r'$\dfrac{dL}{dz} \; (H \cdot m^{-1})$', rotation=0)
-pltHelper.centerPlt()
-
-plt.subplot(1, 2, 2)
-plt.plot(test.dLz_z, discrete_fprime(test.dLz, test.dLz_z))
-plt.plot(z2, c.d2Lz()(z2))
-pltHelper.centerPlt()
-
-plt.show()
-"""
-
-# Mu_impact(cas_1)
-# Mu_impact(cas_1_b)
-# Mu_impact(cas_2)
-# Mu_impact(cas_2_b)
-# Mu_impact(cas_3)
-# Mu_impact(cas_4)
-
-# I_impact(cas_1)
-# I_impact(cas_1_b)
-# I_impact(cas_4)
-# I_impact(cas_2)
-# I_impact(cas_2_b)
-# I_impact(cas_3)
-
-
-# print(test_case(cas_1))
-
-
-"""
-test_data_convexe_noise = numpy.array([0, 17, 15, 17, 20, 21])
-test = convexApprox.Convex_approx_1(test_data_convexe_noise, concave=True, details=True)
-plt.plot(test_data_convexe_noise, color=(0, 0, 1))
-plt.plot(test.minimize()[0], color=(1, 0, 0))
-plt.plot(test.x0, color=(0, 1, 0))
-plt.show()
-
-"""
-
-"""
-test = convexApprox.Convex_approx(example_1[0], example_1[1], True)
-# print(res)
-# plt.plot(test._d3Lz[:len(test._d3Lz) // 2])
-# plt.plot(test.moving_average(test._d3Lz[:len(test._d3Lz) // 2], 4))
-# plt.show()
-# print(len(test._d3Lz))
-
-res = test.run_approx()
-plt.plot(test.dLz, color=(1, 0, 0))
-plt.plot(res)
-
-plt.show()
-"""
-
-"""
-test_data_bug = numpy.array([3.16417272e-05, 2.59546637e-05, 2.14243552e-05, 1.70104655e-05,
-                             1.43818425e-05, 1.17533962e-05, 9.67061474e-06, 7.99037100e-06,
-                             6.61766840e-06, 5.71834441e-06, 5.27480381e-06, 3.76124529e-06,
-                             3.41272316e-06, 2.82035612e-06, 2.40723600e-06, 2.10181543e-06,
-                             1.68864855e-06, 1.65079749e-06, 8.64456101e-07, 7.06980690e-07,
-                             1.30320127e-06, 4.75685828e-07, 1.06861701e-07, -3.92277475e-08,
-                             0.00000000e+00])
-test = convexApprox.Convex_approx_1(test_data_bug, details=True)
-plt.plot(test_data_bug, color=(0, 0, 1))
-plt.plot(test.minimize()[0], color=(1, 0, 0))
-plt.plot(test.x0, color=(0, 1, 0))
-plt.show()
-"""
-
-
 def l_construct(cas, space=3):
-    # Mu impact
+    """ compute a simple case inductance """
     Lp = cas["Lp"]
     Rp = cas["Rp"]
     Lb = cas["Lb"]
@@ -382,6 +282,7 @@ def l_construct(cas, space=3):
 
 
 def plot_l(test):
+    """ Plot the inductance (raw vs. convex approx and splines) """
     convex = convexApprox.Convex_approx(test.dLz_z, test.dLz)
     lz = splinify.splinify(test.dLz_z, test.L0, dL=convex.run_approx())
 
@@ -398,39 +299,13 @@ def plot_l(test):
 
     plt.subplot(313, sharex=ax1)
     plt.plot(lz.z, discrete_fprime(test.dLz, test.dLz_z), color=(1, 0, 0))
-    plt.plot(z, lz.d2Lz()(z), color=(0, 0, 1))
-    plt.show()
-
-
-def plot_l_b(test):
-    convex = convexApprox.Convex_approx(test.dLz_z, test.dLz, order=2)
-    print(test.dLz_z, test.dLz)
-    # plt.plot(convex._d2Lz)
-    # plt.plot(convex.run_approx())
-    # plt.show()
-
-    lz = splinify.splinify(test.dLz_z, test.L0, d2L=convex.run_approx())
-
-    z = numpy.linspace(2 * lz.z[0], 2 * lz.z[-1], 10000)
-
-    ax1 = plt.subplot(311)
-    plt.plot(z, lz.Lz()(z), color=(0, 0, 1))
-    plt.setp(ax1.get_xticklabels())
-
-    ax2 = plt.subplot(312, sharex=ax1)
-    plt.plot(lz.z, test.dLz, color=(1, 0, 0))
-    plt.plot(z, lz.dLz()(z), color=(0, 0, 1))
-    plt.setp(ax2.get_xticklabels(), visible=False)
-
-    plt.subplot(313, sharex=ax1)
-    plt.plot(lz.z, discrete_fprime(test.dLz, test.dLz_z), color=(1, 0, 0))
     plt.plot(lz.z, convex.run_approx(), color=(0, 1, 0))
     plt.plot(z, lz.d2Lz()(z), color=(0, 0, 1))
     plt.show()
-# l_construct(cas_3)
 
 
 def solver_test(loc, nb=1):
+    """ Compute the dynamic of a solution for a simple case, nb it the number of initial position to try """
     coil = datastore.coils.iloc[loc]
     convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
     lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
@@ -445,26 +320,13 @@ def solver_test(loc, nb=1):
     test.plot_multiple(res)
 
 
-def dicho_test(loc):
-    coil = datastore.coils.iloc[loc]
-    convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
-    lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
-
-    test = solver.gaussSolver(lz, C=0.0047, R=0.1, E=170, m=0.0078)
-    res = test.computeOptimal(-(5 * coil.Lb) / 2000)
-    print("ec", test.computeMaxEc(res[1]))
-    print("etotal", test.computeMaxE(res[1]))
-    print("tau", test.computeTau(res[1]) * 100)
-    test.plot_single(res[1])
-    print(res[0])
-
-
 def linear_test(loc, plot=False, plot3d=False):
+    """ Compute the optimal launch for a given problem, be careful plot3d takes some time """
     coil = datastore.coils.iloc[loc]
     convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
     lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
     if plot:
-        plot_l_b(coil)
+        plot_l(coil)
     test = solver.gaussSolver(lz, C=0.0047, R=0.1 + coil.resistance, E=450, m=0.031)
     res = test._linear_opt(-(5 * coil.Lb) / 2000, plot=plot, plot3d=plot3d)
     # print(res)
@@ -474,21 +336,8 @@ def linear_test(loc, plot=False, plot3d=False):
     return (test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
 
 
-# solver_test(0, 5)
-
-"""
-r = []
-for i in range(30):
-    r.append(linear_test(1 + i * 31))
-for i in r:
-    print(i)
-# plot_l(datastore.coils.iloc[5])
-"""
-
-# linear_test(5, True, True)
-
-
 def vs_old_maple():
+    """ test vs. some legacy code (not provided) """
     coil = l_construct({
         'Lp': 22,
         'Rp': 4.5,
@@ -499,19 +348,17 @@ def vs_old_maple():
     })
     convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
     lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
-    plot_l_b(coil)
+    plot_l(coil)
     print("rb", coil.resistance)
     test = solver.gaussSolver(lz, C=0.0050, R=0.016 + 0.075, E=170, m=0.0109)
     res = test._linear_opt(-0.08, plot=True, plot3d=True, epsilon=0.001)
-    # print(res)
     test.plot_single(res[1])
     print(test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 10000) / 100) + "%")
     return (test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
 
 
-# vs_old_maple()
-
 def advanced_linear_test(loc, plot=False, plot3d=False):
+    """ almost entire pipeline """
     coil = datastore.coils.iloc[loc]
     coil = l_construct({
         'Lp': coil.Lp,
@@ -524,7 +371,7 @@ def advanced_linear_test(loc, plot=False, plot3d=False):
     convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
     lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
     if plot:
-        plot_l_b(coil)
+        plot_l(coil)
     test = solver.gaussSolver(lz, C=0.0047, R=0.1 + coil.resistance, E=450, m=0.031)
     res = test._linear_opt(-(5 * coil.Lb) / 2000, plot=plot, plot3d=plot3d, epsilon=0.00005)
     # print(res)
@@ -534,19 +381,8 @@ def advanced_linear_test(loc, plot=False, plot3d=False):
     return (test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
 
 
-def d2L_filtered(loc):
-    coil = datastore.coils.iloc[loc]
-    # lpfilter = firFilter.lFilter(coil.dLz_z, coil.dLz, 1000)
-    # lpfilter.plot()
-    convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
-    splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
-    plot_l_b(coil)
-
-
-# d2L_filtered(800)
-
-
-def mu_impact(coil, full_print=False):
+def mu_impact_helper(coil, full_print=False):
+    """ used to test confidence in coils mu impact helper"""
     Lp = coil["Lp"]
     Rp = coil["Rp"]
     Lb = coil["Lb"]
@@ -572,6 +408,3 @@ def mu_impact(coil, full_print=False):
     print(coil)
     if full_print:
         Mu_impact(coil)
-
-
-# mu_impact(datastore.coils.iloc[0], False)
