@@ -7,14 +7,16 @@ import datastore
 import solver
 import convexApprox
 import splinify
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 import pandas as pd
 from functools import partial
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from tqdm import tqdm
 from scipy.interpolate import griddata
-
+import argparse
+import utils
+from matplotlib.ticker import FuncFormatter
 
 POOL_SIZE = 6
 
@@ -88,16 +90,13 @@ def build_some_coils(n=10):
     for index, coil in datastore.coils[datastore.coils['dLz'].isnull()][:n].iterrows():
         coils.append(coil)
     with Pool(POOL_SIZE) as p:
-        coils = []
-        for res in tqdm(p.imap(_build_a_coil, coils), total=len(coils)):
-            coils.append(res)
+        coils = list(tqdm(p.imap(_build_a_coil, coils), total=len(coils)))
     for coil in coils:
         datastore.update_coil(coil)
 
 
 def _build_a_coil(coil):
     """ helper for multiprocessing """
-    print("Coil", coil.name)
     coil_construct(coil)
     return coil
 
@@ -133,12 +132,12 @@ def find_optimal_launch(loc, C, R, E, v0=0, plot=False, plot3d=False):
     """
     coil = datastore.coils.iloc[loc]
     m = numpy.pi * coil.Rp**2 * coil.Lp * 7860 * 10 ** (-9)
-    convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, order=2)
-    lz = splinify.splinify(convex.dLz_z, coil.L0, d2L=convex.run_approx())
+    convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, est_freq=utils.estFreq(coil))
+    lz = splinify.splinify(coil.dLz_z, coil.L0, d2L=convex.run_approx())
     if plot:
-        plot_l_b(coil, lz, convex)
-    test = solver.gaussSolver(lz, C=C, R=R + coil.resistance, E=E, m=m, v0=v0)
-    res = test.computeOptimal(-(5 * coil.Lb) / 2000, plot=plot, plot3d=plot)
+        plot_l_b(coil, lz)
+    test = solver.gaussSolver(lz, C=C, R=(R + coil.resistance), E=E, m=m, v0=v0)
+    res = test.computeOptimal(-(1.5 * coil.Lb) / 1000, plot=plot, plot3d=plot)
     if plot:
         test.plot_single(res[1])
     print("Coil " + str(coil.name) + " opt launch", test.computeMaxEc(res[1]), str(int(test.computeTau(res[1]) * 100)) + "%")
@@ -195,31 +194,78 @@ def build_some_solutions(setup_id, n=10):
     fun = partial(build_solution, setup_id=setup_id)
     res = []
     with Pool(POOL_SIZE) as p:
-        res = []
-        for sol in tqdm(p.imap(fun, coil_ids), total=len(coil_ids)):
-            res.append(sol)
+        res = list(tqdm(p.imap(fun, coil_ids), total=len(coil_ids)))
     for sol in res:
         sol.id = len(datastore.solutions)
         datastore.save_solution(sol)
 
 
-def plot_l_b(coil, spline, convex):
+def plot_l_b(coil, spline):
     """ a helper to plot a coil inductance """
-    z = numpy.linspace(2 * spline.z[0], 2 * spline.z[-1], 10000)
+    z = numpy.linspace(spline.z[0], spline.z[-1], 10000)
+
+    plt.subplots_adjust(hspace=0.8)
 
     ax1 = plt.subplot(311)
     plt.plot(z, spline.Lz()(z), color=(0, 0, 1))
-    plt.setp(ax1.get_xticklabels())
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    ax1.set_title(r"$L(z)$", fontsize=11)
+
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(-2, 1))
 
     ax2 = plt.subplot(312, sharex=ax1)
     plt.plot(spline.z, coil.dLz, color=(1, 0, 0))
     plt.plot(z, spline.dLz()(z), color=(0, 0, 1))
     plt.setp(ax2.get_xticklabels(), visible=False)
+    ax2.set_title(r"$\dfrac{dL}{dz}(z)$", fontsize=11)
 
-    plt.subplot(313, sharex=ax1)
-    plt.plot(spline.z, convex.run_approx(), color=(0, 1, 0))
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(-2, 1))
+
+    ax3 = plt.subplot(313, sharex=ax2)
+    plt.plot(spline.z, spline.d2L, color=(0, 1, 0))
     plt.plot(spline.z, discrete_fprime(coil.dLz, coil.dLz_z), color=(1, 0, 0))
     plt.plot(z, spline.d2Lz()(z), color=(0, 0, 1))
+    plt.setp(ax3.get_xticklabels(), visible=True)
+    ax3.set_title(r"$\dfrac{d^{2}L}{dz^{2}}(z)$", fontsize=11)
+
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(-2, 1))
+
+    ax3.set(xlabel=r'$z (m)$', ylabel=r"$H.m^{-2}$")
+    ax2.set(ylabel=r"$H.m^{-1}$")
+    ax1.set(ylabel=r"$H$")
+    plt.show()
+
+
+def plot_l_raw(coil):
+    """ a helper to plot a coil inductance """
+    plt.subplots_adjust(hspace=0.8)
+
+    ax1 = plt.subplot(411)
+    plt.plot(coil.dLz_z, coil.dLz, color=(1, 0, 0))
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    ax1.set_title(r"$\dfrac{dL}{dz}(z)$", fontsize=11)
+
+    ax2 = plt.subplot(412, sharex=ax1)
+    plt.plot(coil.dLz_z, discrete_fprime(coil.dLz, coil.dLz_z), color=(1, 0, 0))
+    plt.setp(ax2.get_xticklabels(), visible=False)
+    ax2.set_title(r"$\dfrac{d^2L}{dz^2}(z)$", fontsize=11)
+
+    ax3 = plt.subplot(413, sharex=ax2)
+    plt.plot(coil.dLz_z, discrete_fprime(discrete_fprime(coil.dLz, coil.dLz_z), coil.dLz_z), color=(1, 0, 0))
+    plt.setp(ax3.get_xticklabels(), visible=False)
+    ax3.set_title(r"$\dfrac{d^{3}L}{dz^{3}}(z)$", fontsize=11)
+
+    ax4 = plt.subplot(414, sharex=ax3)
+    plt.plot(coil.dLz_z, discrete_fprime(discrete_fprime(discrete_fprime(coil.dLz, coil.dLz_z), coil.dLz_z), coil.dLz_z), color=(1, 0, 0))
+    plt.setp(ax4.get_xticklabels(), visible=True)
+    ax4.set_title(r"$\dfrac{d^{4}L}{dz^{4}}(z)$", fontsize=11)
+
+    plt.ticklabel_format(axis='both', style='sci', scilimits=(-1, 1))
+
+    ax4.set(xlabel=r'$z (m)$', ylabel=r"$H.m^{-4}$")
+    ax3.set(ylabel=r"$H.m^{-3}$")
+    ax2.set(ylabel=r"$H.m^{-2}$")
+    ax1.set(ylabel=r"$H.m^{-1}$")
     plt.show()
 
 
@@ -265,16 +311,14 @@ def compute_some_mu(n=10):
     for index, coil in datastore.coils[datastore.coils['mu_approx_valid'].isnull()][:n].iterrows():
         coils.append(coil)
     with Pool(POOL_SIZE) as p:
-        coils = []
-        for res in tqdm(p.imap(compute_mu_impact, coils), total=len(coils)):
-            coils.append(res)
+        coils = list(tqdm(p.imap(compute_mu_impact, coils), total=len(coils)))
     for coil in coils:
         datastore.update_coil(coil)
 
 
 def plot_solutions(setup_id, phi):
     """ plot a solution in 3d, phi should be the wire size """
-    df = datastore.solutions[datastore.solutions["setup"] == setup_id].merge(datastore.coils[datastore.coils["phi"] == 1.0], how="inner", left_on="coil", right_index=True)
+    df = datastore.solutions[datastore.solutions["setup"] == setup_id].merge(datastore.coils[datastore.coils["phi"] == phi], how="inner", left_on="coil", right_index=True)
     df = df[["Lb", "Rbo", "tau"]]
 
     x1 = numpy.linspace(df['Lb'].min(), df['Lb'].max(), len(df['Lb'].unique()))
@@ -282,21 +326,54 @@ def plot_solutions(setup_id, phi):
     x2, y2 = numpy.meshgrid(x1, y1)
     z2 = griddata((df['Lb'], df['Rbo']), numpy.array(df['tau']) * 100, (x2, y2))
 
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    surf = ax.plot_surface(x2, y2, z2, cmap=cm.viridis,
-                           rstride=1, cstride=1,
-                           vmin=numpy.nanmin(z2), vmax=numpy.nanmax(z2))
-
-    fig.colorbar(surf, shrink=0.5, aspect=5)
+    fig, ax = plt.subplots()
+    CS = ax.contourf(x2, y2, z2, 100, cmap=cm.viridis)
+    ax.set_xlabel(r"$\mathrm{Coil \ length \ }(mm)$")
+    ax.set_ylabel(r"$\mathrm{Coil \ outer \ radius \ }(mm)$")
+    cbar = plt.colorbar(CS)
+    cbar.ax.set_ylabel(r"$\mathrm{Energy \ transfer \ }(\%)$")
+    CS2 = ax.contour(x2, y2, z2, 5, linewidths=(1,), colors=('k',))
+    ax.clabel(CS2, fmt=FuncFormatter(lambda y, _: '{:,.2%}'.format(y / 100)), colors='k')
     plt.show()
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog="Coilgun simulator")
+    parser.add_argument('-C', '--compute_coils', help='Compute a batch of coils', type=int, nargs=1)
+    parser.add_argument('-S', '--compute_solutions', help='Compute a batch of solutions setup and then the batch size', type=int, nargs=2)
+    parser.add_argument('-M', '--compute_mus', help='Compute a batch of mus approximation', type=int, nargs=1)
+
+    opts = parser.parse_args()
+
+    POOL_SIZE = cpu_count()
+
+    if opts.compute_coils:
+        print("Computing coils")
+        build_some_coils(opts.compute_coils[0])
+
+    if opts.compute_solutions:
+        print("Computing solutions")
+        build_some_solutions(opts.compute_solutions[0], opts.compute_solutions[1])
+
+    if opts.compute_mus:
+        print("Checking Mu approximations")
+        compute_some_mu(opts.compute_mus[0])
+
+    coil = datastore.coils.iloc[300]
+    # print(coil)
+    # convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, est_freq=utils.estFreq(coil))
+    # spline = splinify.splinify(coil.dLz_z, coil.L0, d2L=convex.run_approx())
+    # plot_l_b(coil, spline)
+    # coil = _build_a_coil(datastore.coils.iloc[300])
+    # build_solution(300, 1, plot=True)
+    # datastore.update_coil(coil)
+    # plt.plot(discrete_fprime(coil.dLz, coil.dLz_z))
+    # plt.plot(savgol_filter(discrete_fprime(coil.dLz, coil.dLz_z), 21, 2))
+    # plt.show()
     # compute_some_mu(10)
     # build_some_coils(10)
     # build_some_solutions(2, 400)
-    plot_solutions(2, 1.0)
+    plot_solutions(1, 1.0)
     # datastore.update_coil(_build_a_coil(datastore.coils.iloc[480]))
     # sol = build_solution(480, 0)
     # sol.id = len(datastore.solutions)

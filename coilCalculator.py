@@ -2,14 +2,17 @@ import femm
 import numpy
 from tqdm import tqdm
 import os
+import utils
+import config
 
 
 class coilCalculator:
     """ The aim of this class to compute, using finite element methods, some key data around a given coilgun problem """
-    __nyq_secu = 1.01
-    __space_factor = 5
+    __nyq_secu = config.NYQ_SECU
+    __space_factor = config.SPACE_FACTOR
+    __oversampling = config.OVERSAMPLING
 
-    def __init__(self, bHide=False, meshsize=1, _i0=100, _id=None):
+    def __init__(self, bHide=False, meshsize=config.MESHSIZE, _i0=config.CURRENT, _id=None):
         """Initialize a FEMM solver
 
         Open FEMM and define the key elements of the magnetic problem.
@@ -42,6 +45,7 @@ class coilCalculator:
         self.espace = None
         self.wire_type = None
         self._i0 = _i0
+        self.bHide = bHide
         femm.openfemm(bHide)
         femm.create(0)
         femm.mi_probdef(0, "millimeters", "axi", 1E-16)
@@ -275,7 +279,7 @@ class coilCalculator:
         force = numpy.zeros(ite)
         femm.mi_selectgroup(1)
         femm.mi_movetranslate2(0, pos[0], 4)
-        for i in tqdm(range(ite // 2)):
+        for i in tqdm(range(ite // 2), disable=self.bHide):
             femm.mi_analyze()
             femm.mi_loadsolution()
             femm.mo_groupselectblock(1)
@@ -314,7 +318,7 @@ class coilCalculator:
             ite += 1
         if rType == "linear":
             if ite == 0:
-                ite = numpy.int(numpy.ceil(4 * self.estFreq() * self.__nyq_secu * 10**-3 * x_max + 1))
+                ite = numpy.int(numpy.ceil(2 * self.__oversampling * self.estFreq() * self.__nyq_secu * 10**-3 * x_max + 1))
                 if ite % 2 == 0:
                     ite += 1
             pos = numpy.array([x_max * (-1 + 2 * i / (ite - 1)) for i in range(ite)])
@@ -322,7 +326,7 @@ class coilCalculator:
             return (pas, pos, ite)
         if rType == "tchebychev":
             if ite == 0:
-                ite = numpy.int(numpy.ceil(4 * self.estFreq() * self.__nyq_secu * 10**-3 * x_max + 1))  # average distance for n iterations is  2 / (n - 1) * np.sin((n - 1) / 2 / n * np.pi)
+                ite = numpy.int(numpy.ceil(2 * self.__oversampling * self.estFreq() * self.__nyq_secu * 10**-3 * x_max + 1))  # average distance for n iterations is  2 / (n - 1) * np.sin((n - 1) / 2 / n * np.pi)
                 if ite % 2 == 0:
                     ite += 1
             pos = numpy.zeros(ite)
@@ -407,7 +411,7 @@ class coilCalculator:
         Returns:
             number -- estimated frequency
         """
-        return 4 / (min(self.Lb, self.Lp) * 10**-3)
+        return utils.estFreq(self)
 
     def __del__(self):
         """  clean temporary files on exit """
