@@ -8,13 +8,12 @@ I provide a simple modelisation of the problem using only a few hypothesis:
 
 I decline all responsibilities in case of any accidents. If you are stupid enough to try and build a coilgun out of a random stranger repo on GitHub, it's on you. Plus, it is probably completely illegal where you live.
 Come on, I am not even a physicist.
-There can be errors everywhere in the model and the code, it was checked against reality only once.
 
 # Installation
 
 To run this code you need to:
 - Understand what a coilgun is and how it works (https://en.wikipedia.org/wiki/Coilgun)
-- Understand the underlying mathematical model developped in the paper
+- Understand the underlying mathematical model developped in the paper (https://github.com/faameunier/coilgun/blob/master/paper.pdf)
 - Install FEMM (http://www.femm.info)
 - Install the requirements
 `pip install -r requirements.txt`
@@ -29,11 +28,11 @@ Then you can just use **main.py** to (in this order):
 - Compute some coils data (build_some_coils)
 - Compute some optimal launch position for a given electrical setup (build_some_solutions)
 - Plot the 3D surface determined by the optimal launch position and have a look at the best coil given a fixed projectile and electrical setup.
-- You can then check the impact of a varying magnetic susceptibility.
+- You can then check the impact of a varying magnetic susceptibility if need be.
 
-Please note that running this code can take weeks if you want to try a lot of setups.
+Please note that running this code can take several days if you want to try a lot of setups on a normal computer.
 
 # Motivation
 
 The mathemical model developped was presented to a jury for the entrance examination for the best French Engineering Schools and was awarded the best possible grade.
-The code was originally in Lua and Maple. However, a FEMM-Python connector was recently created and I therefore decided to give this project a second chance. 
+The code was originally in Lua and Maple. However, a FEMM-Python connector was recently created and I therefore decided to give this project a second chance. The associated paper might be published one day.
