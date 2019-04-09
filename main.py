@@ -136,7 +136,7 @@ def find_optimal_launch(loc, C, R, E, v0=0, plot=False, plot3d=False):
     lz = splinify.splinify(coil.dLz_z, coil.L0, d2L=convex.run_approx())
     if plot:
         plot_l_b(coil, lz)
-    test = solver.gaussSolver(lz, C=C, R=(R + coil.resistance), E=E, m=m, v0=v0)
+    test = solver.gaussSolver(lz, C=C, R=(R + coil.resistance) * 0 + 0.001, E=E, m=m, v0=v0)
     res = test.computeOptimal(-(1.5 * coil.Lb) / 1000, plot=plot, plot3d=plot)
     if plot:
         test.plot_single(res[1])
@@ -359,13 +359,14 @@ if __name__ == '__main__':
         print("Checking Mu approximations")
         compute_some_mu(opts.compute_mus[0])
 
-    coil = datastore.coils.iloc[300]
-    # print(coil)
-    # convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, est_freq=utils.estFreq(coil))
-    # spline = splinify.splinify(coil.dLz_z, coil.L0, d2L=convex.run_approx())
-    # plot_l_b(coil, spline)
-    # coil = _build_a_coil(datastore.coils.iloc[300])
-    # build_solution(300, 1, plot=True)
+    coil = datastore.coils.iloc[300]  # 110, 300
+    # datastore.update_coil(coil)
+    plot_l_raw(coil)
+    convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, est_freq=utils.estFreq(coil))
+    convex.run_approx()
+    spline = splinify.splinify(coil.dLz_z, coil.L0, d2L=convex.run_approx())
+    plot_l_b(coil, spline)
+    build_solution(300, 1, plot=True)
     # datastore.update_coil(coil)
     # plt.plot(discrete_fprime(coil.dLz, coil.dLz_z))
     # plt.plot(savgol_filter(discrete_fprime(coil.dLz, coil.dLz_z), 21, 2))
@@ -373,7 +374,7 @@ if __name__ == '__main__':
     # compute_some_mu(10)
     # build_some_coils(10)
     # build_some_solutions(2, 400)
-    plot_solutions(1, 1.0)
+    # plot_solutions(1, 1.0)
     # datastore.update_coil(_build_a_coil(datastore.coils.iloc[480]))
     # sol = build_solution(480, 0)
     # sol.id = len(datastore.solutions)
