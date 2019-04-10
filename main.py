@@ -364,7 +364,7 @@ if __name__ == '__main__':
     # convex = convexApprox.Convex_approx(coil.dLz_z, coil.dLz, est_freq=utils.estFreq(coil))
     # spline = splinify.splinify(coil.dLz_z, coil.L0, d2L=convex.run_approx())
     # plot_l_b(coil, spline)
-    build_solution(110, 1, plot=True)
+    build_solution(300, 1, plot=True)
     # datastore.update_coil(coil)
     # plt.plot(discrete_fprime(coil.dLz, coil.dLz_z))
     # plt.plot(savgol_filter(discrete_fprime(coil.dLz, coil.dLz_z), 21, 2))
