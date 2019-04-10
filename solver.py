@@ -227,7 +227,7 @@ class gaussSolver:
                 plt.plot(self.t, res[i, 3, :], color=(i / n, 0, 1 - i / n), label="dz/dt(t) - " + str(i))
             plt.setp(ax1.get_xticklabels())
             ax1.set_title(r"$\mathrm{Projectile \ speed \ vs. \ time}$", fontsize=11)
-            ax1.set(xlabel=r"$m.s^{-1}$", ylabel=r"$s$")
+            ax1.set(xlabel=r"$s$", ylabel=r"$m.s^{-1}$")
 
             ax2 = plt.subplot(212)
             line = []
@@ -239,7 +239,7 @@ class gaussSolver:
             ax2.add_collection(coll)
             ax2.autoscale_view()
             ax2.set_title(r"$\mathrm{Projectile \ speed \ vs. \ initial \ position}$", fontsize=11)
-            ax2.set(xlabel=r"$m.s^{-1}$", ylabel=r"$m$")
+            ax2.set(xlabel=r"$m$", ylabel=r"$m.s^{-1}$")
             plt.show()
 
         if plot3d:
