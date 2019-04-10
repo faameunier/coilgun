@@ -243,6 +243,9 @@ class Convex_approx_v2:
         for i in indexes:
             self.convex_mask[i] = False
             self.concave_mask[i] = False
+        # plt.plot(self.convex_mask)
+        # plt.plot(self.concave_mask)
+        # plt.show()
 
     def build_distance(self):
         """Builds distance and jacobian function
@@ -287,22 +290,17 @@ class Convex_approx_v2:
         base_derivative[2] = 1
         base_derivative[1] = -2
         base_derivative[0] = 1
-        convex = True
         for k in range(self.n_points):
-            if self.convex_mask[k] == True:
+            if self.convex_mask[k]:
                 jac_code_conv.append(numpy.roll(base_derivative, k - 1))
-            elif self.concave_mask[k] == True:
+            elif self.concave_mask[k]:
                 jac_code_conc.append(-1 * numpy.roll(base_derivative, k - 1))
-        jac_code = jac_code_conv + jac_code_conc
+        jac_code = numpy.array(jac_code_conv + jac_code_conc)
 
-        plt.plot(jac_code)
-        plt.show()
-
-        print(numpy.array(jac_code).shape)
         ineq_cons = {
             'type': 'ineq',
             'fun': fun,
-            'jac': lambda x: numpy.array(jac_code)
+            'jac': lambda x: jac_code
         }
 
         self.ineq_cons = ineq_cons
@@ -331,17 +329,23 @@ class Convex_approx_v2:
         base_derivative[0] = 1
         for i in self.indexes[1:-1]:
             jac_code.append(numpy.roll(base_derivative, i - 1))
-
+        jac_code = numpy.array(jac_code)
         # borders
         first = numpy.zeros(self.n_points)
         first[0] = 1
         second = numpy.zeros(self.n_points)
         second[-1] = 1
 
+        # eq_cons = {
+        #     'type': 'eq',
+        #     'fun': lambda x: numpy.array([x[0] - self.data_points[0], x[-1] - self.data_points[-1]] + fun(x)),
+        #     'jac': lambda x: numpy.array([first, second] + jac_code)
+        # }
+
         eq_cons = {
             'type': 'eq',
-            'fun': lambda x: numpy.array([x[0] - self.data_points[0], x[-1] - self.data_points[-1]] + fun(x)),
-            'jac': lambda x: numpy.array([first, second] + jac_code)
+            'fun': lambda x: numpy.array(fun(x)),
+            'jac': lambda x: jac_code
         }
 
         self.eq_cons = eq_cons
